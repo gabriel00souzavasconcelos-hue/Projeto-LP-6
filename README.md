@@ -1,122 +1,253 @@
-# Sistema de Clínicas - Projeto TCC
+# 🏥 Sistema de Gerenciamento de Clínicas
 
-Este é um protótipo simples de um sistema de clínicas desenvolvido para um projeto de faculdade.
+Sistema completo para gerenciamento de clínicas médicas com interface mobile moderna e API robusta.
 
-## 🏗️ Estrutura do Projeto
+## 🎯 Problema
 
-- **backend/**: API REST em Node.js + TypeScript + Supabase
-- **mobile/**: Aplicativo mobile em React Native + Expo
+O gerenciamento de clínicas médicas frequentemente enfrenta desafios significativos:
 
-## 🚀 Como executar
+- **Desorganização de informações**: Dados de pacientes e clínicas espalhados em diferentes sistemas
+- **Dificuldade de acesso**: Falta de mobilidade para consultar informações importantes
+- **Cadastros duplicados**: Ausência de controle centralizado de registros
+- **Interface desatualizada**: Sistemas antigos com experiência do usuário deficiente
+- **Comunicação ineficiente**: Dificuldade na comunicação entre clínicas e pacientes
+- **Busca complexa**: Dificuldade para encontrar clínicas específicas ou especializações
 
-### Pré-requisitos
-- Node.js 18+
-- npm ou yarn
-- Expo CLI (`npm install -g @expo/cli`)
+## � Solução
 
-### Backend
+Nossa aplicação resolve esses problemas através de um sistema integrado e moderno:
 
-1. Entre na pasta do backend:
-```bash
-cd backend
+### **📱 Aplicativo Mobile Intuitivo**
+- Interface moderna e responsiva construída com React Native
+- Design system consistente com componentes reutilizáveis
+- Navegação fluida entre diferentes módulos
+- Experiência otimizada para dispositivos móveis
+
+### **🔐 Sistema de Autenticação Dual**
+- Login diferenciado para pacientes e clínicas
+- Segurança na validação de credenciais
+- Controle de acesso baseado em perfis
+
+### **📊 Gerenciamento Centralizado**
+- CRUD completo para clínicas e pacientes
+- Sistema de especializações médicas
+- Busca avançada e filtros inteligentes
+- Sincronização em tempo real
+
+### **🏗️ Arquitetura Robusta**
+- API RESTful construída com Node.js e TypeScript
+- Banco de dados Supabase para alta disponibilidade
+- Padrão MVC para organização e manutenibilidade
+- Clean Code para facilitar evolução do sistema
+
+## 🌟 Utilidade
+
+### **Para Clínicas Médicas:**
+- **Gestão de perfil**: Manter informações atualizadas (endereço, telefone, especialidades)
+- **Visibilidade**: Aparecer em buscas de pacientes procurando especialidades específicas
+- **Comunicação**: Canal direto com pacientes através da plataforma
+- **Credibilidade**: Perfil profissional com fotos e informações completas
+
+### **Para Pacientes:**
+- **Busca inteligente**: Encontrar clínicas por localização, especialidade ou nome
+- **Informações completas**: Visualizar dados de contato, endereço e especialidades
+- **Acesso móvel**: Consultar informações em qualquer lugar e momento
+- **Interface amigável**: Navegação simples e intuitiva
+
+### **Para Administradores:**
+- **Controle total**: Gerenciar cadastros de clínicas e pacientes
+- **Especializações**: Manter catálogo organizado de especialidades médicas
+- **Relatórios**: Acompanhar crescimento e uso da plataforma
+- **Manutenção**: Sistema organizado facilita atualizações e correções
+
+## 🎨 Protótipo
+
+*[Seção reservada para as telas - você pode adicionar as imagens aqui]*
+
+### Principais Telas:
+
+1. **Tela de Login**
+   - Seleção de perfil (Paciente/Clínica)
+   - Formulário de autenticação moderno
+   - Navegação para cadastro
+
+2. **Lista de Clínicas** 
+   - Busca em tempo real
+   - Cards informativos com dados das clínicas
+   - Filtros por especialização
+
+3. **Menu da Clínica**
+   - Perfil completo da clínica
+   - Opções de edição
+   - Informações de contato e especializações
+
+## 📊 Dados - Modelo de Entidade e Relacionamento (DER)
+
+### **Entidades Principais:**
+
+```
+📋 PACIENTES
+├── codigo (PK) - Chave primária
+├── nome - Nome completo
+├── datan - Data de nascimento
+├── fone - Telefone de contato
+├── ende - Endereço completo
+├── email - Email (único)
+└── senha - Senha criptografada
+
+🏥 CLÍNICAS  
+├── codigo (PK) - Chave primária
+├── nome - Nome da clínica
+├── endereco - Endereço completo
+├── fone - Telefone de contato
+├── email - Email (único)
+├── senha - Senha criptografada
+└── imagem - URL da imagem/logo
+
+🎯 ESPECIALIZAÇÕES
+├── codigo (PK) - Chave primária
+└── nome - Nome da especialização
+
+🔗 CLÍNICAS_ESPECIALIZAÇÕES (Relacionamento N:N)
+├── codigo_clinica (FK) - Referência à clínica
+└── codigo_especializacao (FK) - Referência à especialização
 ```
 
-2. Instale as dependências:
-```bash
-npm install
+### **Relacionamentos:**
+
+- **CLÍNICAS ←→ ESPECIALIZAÇÕES**: Relacionamento muitos-para-muitos
+  - Uma clínica pode ter várias especializações
+  - Uma especialização pode estar em várias clínicas
+  - Implementado através da tabela associativa `clinicas_especializacoes`
+
+- **PACIENTES**: Entidade independente para o sistema de autenticação e cadastro
+
+### **Características do Banco:**
+
+- **Chaves Primárias**: Auto-incrementais para todas as entidades
+- **Integridade Referencial**: Foreign keys garantem consistência
+- **Emails Únicos**: Previnem cadastros duplicados
+- **Campos Opcionais**: Flexibilidade para informações não obrigatórias
+- **Extensibilidade**: Estrutura permite fácil adição de novos campos
+
+## 🛠️ Tecnologias Utilizadas
+
+### **Frontend (Mobile)**
+- **React Native** - Framework para desenvolvimento mobile
+- **Expo SDK 54** - Plataforma de desenvolvimento
+- **TypeScript** - Tipagem estática
+- **React Navigation** - Navegação entre telas
+- **Design System** - Componentes personalizados (ModernButton, ModernInput, ModernCard)
+
+### **Backend (API)**
+- **Node.js** - Runtime JavaScript
+- **Express** - Framework web
+- **TypeScript** - Tipagem estática
+- **Supabase** - Backend-as-a-Service (BaaS)
+- **CORS** - Middleware para requisições cross-origin
+
+### **Banco de Dados**
+- **PostgreSQL** - Banco relacional (via Supabase)
+- **Supabase Auth** - Sistema de autenticação
+- **Real-time** - Sincronização em tempo real
+
+## 📁 Estrutura do Projeto
+
+```
+clinica-app/
+├── mobile/                  # Aplicativo React Native
+│   ├── src/
+│   │   ├── components/      # Componentes reutilizáveis
+│   │   ├── screens/         # Telas da aplicação
+│   │   ├── navigation/      # Configuração de navegação
+│   │   ├── styles/          # Sistema de design e temas
+│   │   ├── api/            # Cliente da API
+│   │   └── types/          # Tipos TypeScript
+│   └── App.tsx
+├── backend/                 # API RESTful
+│   ├── src/
+│   │   ├── controllers/     # Controladores MVC
+│   │   ├── services/        # Lógica de negócio
+│   │   ├── routes/          # Definição de rotas
+│   │   ├── types.ts         # Tipos da API
+│   │   └── index.ts         # Servidor principal
+│   └── migrations/          # Scripts do banco
+└── README.md
 ```
 
-3. Configure as variáveis de ambiente:
-- O arquivo `.env` já está configurado com as credenciais do Supabase
-- **Porta:** O backend roda na porta **4000**
+## 🚀 Como Executar o Projeto
 
-4. Execute o backend:
+### **📱 Mobile (React Native)**
+
 ```bash
-# Modo desenvolvimento
-npm run dev
-
-# Ou compilar e executar
-npm run build
-npm start
-```
-
-O backend estará disponível em: `http://localhost:4000`
-
-### Mobile
-
-1. Entre na pasta do mobile:
-```bash
+# Navegar para a pasta mobile
 cd mobile
-```
 
-2. Instale as dependências:
-```bash
+# Instalar dependências
 npm install
-```
 
-3. **IMPORTANTE**: Ajuste o IP do backend no arquivo `src/api/client.ts`:
-```typescript
-export const BASE_URL = "http://SEU_IP_LOCAL:4000";
-```
-Substitua `SEU_IP_LOCAL` pelo IP da sua máquina na rede local.
+# Executar no simulador iOS
+npm run ios
 
-4. Execute o app:
-```bash
-# Iniciar o Expo
-npm start
-
-# Ou diretamente no Android
+# Executar no simulador Android
 npm run android
 
-# Ou diretamente no iOS
-npm run ios
+# Executar no Expo Go
+npm start
 ```
 
-## 📱 Funcionalidades
+### **🔧 Backend (API)**
 
-### Backend (API)
-- ✅ Autenticação simples (sem JWT - apenas para protótipo)
-- ✅ CRUD de Pacientes
-- ✅ CRUD de Clínicas
-- ✅ CRUD de Especializações
-- ✅ Sistema de login para pacientes e clínicas
+```bash
+# Navegar para a pasta backend
+cd backend
 
-### Mobile (App)
-- ✅ Tela de login
-- ✅ Cadastro de pacientes
-- ✅ Cadastro de clínicas
-- ✅ Listagem de clínicas
-- ✅ Navegação entre telas
+# Instalar dependências
+npm install
 
-## 🗄️ Banco de Dados
+# Configurar variáveis de ambiente (.env)
+SUPABASE_URL=sua_url_do_supabase
+SUPABASE_ANON_KEY=sua_chave_anonima
+PORT=3000
 
-O projeto usa **Supabase** (PostgreSQL na nuvem) com as seguintes tabelas:
+# Executar em desenvolvimento
+npm run dev
 
-- `pacientes`: dados dos pacientes
-- `clinicas`: dados das clínicas
-- `especializacoes`: tipos de especialidades médicas
-- `clinicas_especializacoes`: relação entre clínicas e especialidades
+# Build para produção
+npm run build && npm start
+```
 
-## 🔧 Configurações
+## � Funcionalidades da API
 
-### Backend
-- **Porta**: 4000
-- **Supabase URL**: Já configurado no `.env`
-- **TypeScript**: Configurado para compilar para `dist/`
+### **🔐 Autenticação** (`/auth`)
+- `POST /auth/login` - Login dual (pacientes/clínicas)
+- `POST /auth/register` - Cadastro de usuários
 
-### Mobile
-- **Expo SDK**: ~50.0.0
-- **React Native**: 0.73.6
-- **Navegação**: React Navigation 6
-- **HTTP Client**: Axios
+### **🏥 Clínicas** (`/clinics`)
+- `GET /clinics` - Listar clínicas
+- `GET /clinics/:codigo` - Buscar clínica específica
+- `POST /clinics` - Cadastrar clínica
+- `PUT /clinics/:codigo` - Editar clínica
+- `DELETE /clinics/:codigo` - Remover clínica
 
-## ⚠️ Limitações (Protótipo)
+### **👤 Pacientes** (`/patients`) 
+- `GET /patients` - Listar pacientes
+- `GET /patients/:codigo` - Buscar paciente específico
+- `POST /patients` - Cadastrar paciente
+- `PUT /patients/:codigo` - Editar paciente
+- `DELETE /patients/:codigo` - Remover paciente
 
-- Senhas armazenadas em texto plano (não usar em produção!)
-- Autenticação simples sem JWT
-- Validações básicas
-- Interface simples
-- Sem testes automatizados
+### **🎯 Especializações** (`/specializations`)
+- `GET /specializations` - Listar especializações
+- `POST /specializations` - Criar especialização
+- `DELETE /specializations/:codigo` - Remover especialização
+
+## 🎯 Objetivos do Projeto
+
+- **Acadêmico**: Projeto de TCC demonstrando conhecimentos em desenvolvimento full-stack
+- **Prático**: Solução real para gerenciamento de clínicas médicas
+- **Tecnológico**: Implementação de tecnologias modernas e boas práticas
+- **Social**: Facilitar acesso à informação médica e melhorar comunicação
 
 ## 🛠️ Resolução de Problemas
 
