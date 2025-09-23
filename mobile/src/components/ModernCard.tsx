@@ -1,4 +1,3 @@
-// src/components/ModernCard.tsx
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { colors, spacing, borderRadius, shadows } from '../styles/theme';

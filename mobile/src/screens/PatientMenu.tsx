@@ -1,4 +1,3 @@
-// src/screens/PatientMenu.tsx
 import React from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { RootStackParamList } from "../navigation";
@@ -16,14 +15,14 @@ export default function PatientMenu({ route, navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Welcome Header */}
+      
       <View style={styles.header}>
         <Text style={styles.welcomeText}>Olá! 👋</Text>
         <Text style={styles.patientName}>{patient?.nome || "Paciente"}</Text>
         <Text style={styles.subtitle}>O que você gostaria de fazer hoje?</Text>
       </View>
 
-      {/* Patient Info Card */}
+      
       <ModernCard variant="elevated" style={styles.patientCard}>
         <View style={styles.patientInfo}>
           <Text style={styles.cardTitle}>Suas Informações</Text>
@@ -39,7 +38,7 @@ export default function PatientMenu({ route, navigation }: Props) {
         </View>
       </ModernCard>
 
-      {/* Action Cards */}
+      
       <View style={styles.actionsContainer}>
         <Text style={styles.sectionTitle}>Ações Disponíveis</Text>
         
@@ -96,7 +95,7 @@ export default function PatientMenu({ route, navigation }: Props) {
         </ModernCard>
       </View>
 
-      {/* Logout */}
+      
       <View style={styles.logoutContainer}>
         <ModernButton
           title="Sair da Conta"

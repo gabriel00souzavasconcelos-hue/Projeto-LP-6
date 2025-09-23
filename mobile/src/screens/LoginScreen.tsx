@@ -1,4 +1,3 @@
-// src/screens/LoginScreen.tsx
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Alert, ScrollView, TouchableOpacity } from "react-native";
 import { RootStackParamList } from "../navigation";
@@ -44,15 +43,15 @@ export default function LoginScreen({ navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Header */}
+      
       <View style={styles.header}>
         <Text style={styles.title}>Bem-vindo</Text>
         <Text style={styles.subtitle}>Faça login em sua conta</Text>
       </View>
 
-      {/* Main Card */}
+    
       <ModernCard variant="elevated" style={styles.loginCard}>
-        {/* Role Selection */}
+       
         <View style={styles.roleContainer}>
           <Text style={styles.roleLabel}>Tipo de Conta</Text>
           <View style={styles.roleButtons}>
@@ -88,7 +87,7 @@ export default function LoginScreen({ navigation }: Props) {
           </View>
         </View>
 
-        {/* Form */}
+    
         <View style={styles.form}>
           <ModernInput
             label="Email"
@@ -117,7 +116,7 @@ export default function LoginScreen({ navigation }: Props) {
         </View>
       </ModernCard>
 
-      {/* Action Buttons */}
+      
       <View style={styles.actionButtons}>
         <ModernButton
           title="Cadastrar Paciente"

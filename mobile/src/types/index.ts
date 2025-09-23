@@ -1,26 +1,26 @@
 export type Patient = {
-  codigo?: number;        // opcional no frontend (gerado pelo backend)
+  codigo?: number;        
   nome: string;
-  datan: string;          // formato YYYY-MM-DD
+  datan: string;         
   fone: string;
   ende: string;
   email: string;
-  senha?: string;         // opcional no frontend (ex.: ao listar não precisa)
+  senha?: string;        
 };
 
 export type Clinic = {
-  codigo?: number;        // opcional no frontend (gerado pelo backend)
+  codigo?: number;        
   nome: string;
   endereco: string;
   fone: string;
   email: string;
-  senha?: string;         // opcional no frontend
+  senha?: string;         
   imagem?: string | null;
-  especializacoes?: string[]; // array de nomes ou ids, conforme uso no frontend
+  especializacoes?: string[]; 
 };
 
 export type Specialization = {
-  codigo?: number; // opcional no frontend
+  codigo?: number; 
   nome: string;
 };
 

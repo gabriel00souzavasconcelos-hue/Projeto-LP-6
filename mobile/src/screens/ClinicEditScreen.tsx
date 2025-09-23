@@ -1,4 +1,3 @@
-// src/screens/ClinicEditScreen.tsx
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Alert, ScrollView, Image } from "react-native";
 import { RootStackParamList } from "../navigation";
@@ -46,13 +45,13 @@ export default function ClinicEditScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Header */}
+      
       <View style={styles.header}>
         <Text style={styles.title}>Editar Clínica</Text>
         <Text style={styles.subtitle}>Atualize as informações da sua clínica</Text>
       </View>
 
-      {/* Current Image Preview */}
+      
       {imagem && (
         <ModernCard variant="outlined" style={styles.imagePreviewCard}>
           <Text style={styles.previewLabel}>Imagem Atual</Text>
@@ -62,7 +61,7 @@ export default function ClinicEditScreen({ route, navigation }: Props) {
         </ModernCard>
       )}
 
-      {/* Main Form Card */}
+      
       <ModernCard variant="elevated" style={styles.formCard}>
         <View style={styles.form}>
           <ModernInput
@@ -109,7 +108,7 @@ export default function ClinicEditScreen({ route, navigation }: Props) {
         </View>
       </ModernCard>
 
-      {/* Action Buttons */}
+      
       <View style={styles.actionButtons}>
         <ModernButton
           title={loading ? "Salvando..." : "Salvar Alterações"}
@@ -129,7 +128,7 @@ export default function ClinicEditScreen({ route, navigation }: Props) {
         />
       </View>
 
-      {/* Info Card */}
+    
       <ModernCard variant="outlined" style={styles.infoCard}>
         <Text style={styles.infoTitle}>💡 Dicas</Text>
         <Text style={styles.infoText}>

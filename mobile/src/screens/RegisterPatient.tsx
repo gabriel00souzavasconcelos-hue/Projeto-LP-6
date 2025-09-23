@@ -1,4 +1,3 @@
-// src/screens/RegisterPatient.tsx
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
 import { RootStackParamList } from "../navigation";
@@ -41,13 +40,13 @@ export default function RegisterPatient({ navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Header */}
+      
       <View style={styles.header}>
         <Text style={styles.title}>Cadastrar Paciente</Text>
         <Text style={styles.subtitle}>Preencha seus dados pessoais</Text>
       </View>
 
-      {/* Main Form Card */}
+      
       <ModernCard variant="elevated" style={styles.formCard}>
         <View style={styles.form}>
           <ModernInput
@@ -101,7 +100,7 @@ export default function RegisterPatient({ navigation }: Props) {
         </View>
       </ModernCard>
 
-      {/* Action Buttons */}
+      
       <View style={styles.actionButtons}>
         <ModernButton
           title="Cadastrar Paciente"

@@ -1,7 +1,4 @@
-// backend/src/index.ts
 import dotenv from 'dotenv';
-
-// Carrega as variáveis de ambiente PRIMEIRO
 dotenv.config();
 
 import express, { Request, Response } from 'express';
@@ -22,7 +19,6 @@ app.get('/', (_req: Request, res: Response) => {
   res.json({ message: 'Clinica API (TypeScript) - ok' });
 });
 
-// Rotas
 app.use('/patients', patientsRouter);
 app.use('/clinics', clinicsRouter);
 app.use('/specializations', specsRouter);

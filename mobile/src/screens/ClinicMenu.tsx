@@ -1,4 +1,3 @@
-// src/screens/ClinicMenu.tsx
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
 import { RootStackParamList } from "../navigation";
@@ -16,14 +15,14 @@ export default function ClinicMenu({ route, navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Welcome Header */}
+      
       <View style={styles.header}>
         <Text style={styles.welcomeText}>Painel da Clínica 🏥</Text>
         <Text style={styles.clinicName}>{clinic?.nome || "Clínica"}</Text>
         <Text style={styles.subtitle}>Gerencie sua clínica</Text>
       </View>
 
-      {/* Clinic Info Card */}
+      
       <ModernCard variant="elevated" style={styles.clinicCard}>
         <View style={styles.clinicInfo}>
           <View style={styles.clinicHeader}>
@@ -52,7 +51,7 @@ export default function ClinicMenu({ route, navigation }: Props) {
         </View>
       </ModernCard>
 
-      {/* Management Actions */}
+      
       <View style={styles.actionsContainer}>
         <Text style={styles.sectionTitle}>Gerenciamento</Text>
         
@@ -145,7 +144,7 @@ export default function ClinicMenu({ route, navigation }: Props) {
         </ModernCard>
       </View>
 
-      {/* Logout */}
+      
       <View style={styles.logoutContainer}>
         <ModernButton
           title="Sair da Conta"

@@ -1,4 +1,3 @@
-// src/screens/ClinicList.tsx
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert, RefreshControl } from "react-native";
 import ClinicCard from "../components/ClinicCard";
@@ -92,13 +91,13 @@ export default function ClinicList({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      
       <View style={styles.header}>
         <Text style={styles.title}>Clínicas Disponíveis</Text>
         <Text style={styles.subtitle}>Encontre a clínica ideal para você</Text>
       </View>
 
-      {/* Search Card */}
+      
       <ModernCard variant="elevated" style={styles.searchCard}>
         <View style={styles.searchContainer}>
           <ModernInput
@@ -128,7 +127,7 @@ export default function ClinicList({ navigation }: Props) {
         </View>
       </ModernCard>
 
-      {/* Results */}
+      
       <View style={styles.resultsContainer}>
         <Text style={styles.resultsCount}>
           {loading ? "Carregando..." : `${clinics.length} clínica(s) encontrada(s)`}
@@ -162,7 +161,7 @@ export default function ClinicList({ navigation }: Props) {
   );
 }
 
-// Componente ModernClinicCard
+
 function ModernClinicCard({ clinic, onPress }: { clinic: Clinic; onPress: () => void }) {
   return (
     <ModernCard variant="elevated" style={styles.clinicCard}>

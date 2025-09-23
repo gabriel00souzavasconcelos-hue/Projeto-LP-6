@@ -1,26 +1,20 @@
-// backend/src/types.ts
-/**
- * Tipos baseados no esquema SQL fornecido:
- * pacientes, clinicas, especializacoes, clinicas_especializacoes
- */
-
 export interface Patient {
-  codigo: number;        // SERIAL PRIMARY KEY
+  codigo: number;       
   nome: string;
-  datan: string;         // armazenamos como string ISO (YYYY-MM-DD)
-  fone: string;
-  ende: string;
+  datan?: string;         
+  fone?: string;
+  ende?: string;
   email: string;
   senha: string;
 }
 
 export interface Clinic {
-  codigo: number;        // SERIAL PRIMARY KEY
+  codigo: number;       
   nome: string;
-  endereco: string;
-  fone: string;
+  endereco?: string;
+  fone?: string;
   email: string;
-  senha: string;
+  senha?: string;
   imagem?: string | null;
 }
 
@@ -34,10 +28,7 @@ export interface ClinicSpecialization {
   codigo_especializacao: number;
 }
 
-/**
- * Database interface para uso com supabase-js createClient<Database>
- * Aqui estamos mapeando apenas as tabelas utilizadas.
- */
+
 export interface Database {
   public: {
     Tables: {

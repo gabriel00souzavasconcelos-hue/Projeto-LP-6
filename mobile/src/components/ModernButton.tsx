@@ -1,4 +1,3 @@
-// src/components/ModernButton.tsx
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { colors, spacing, borderRadius, fontSize, fontWeight, shadows } from '../styles/theme';

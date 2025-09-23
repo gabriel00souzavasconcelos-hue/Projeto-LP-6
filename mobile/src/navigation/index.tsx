@@ -1,6 +1,5 @@
-// src/navigation/index.tsx
 import React from "react";
-// Usando require para evitar problemas de export
+
 const NativeStackLibrary = require("@react-navigation/native-stack");
 const createNativeStackNavigator = NativeStackLibrary.createNativeStackNavigator;
 

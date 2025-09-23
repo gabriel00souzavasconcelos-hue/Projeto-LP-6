@@ -1,4 +1,3 @@
-// src/components/ModernInput.tsx
 import React, { useState } from 'react';
 import { TextInput, View, Text, StyleSheet, TextInputProps } from 'react-native';
 import { colors, spacing, borderRadius, fontSize, fontWeight } from '../styles/theme';

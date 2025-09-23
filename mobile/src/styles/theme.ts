@@ -1,4 +1,3 @@
-// src/styles/theme.ts
 export const colors = {
   // Cores principais
   primary: '#007AFF',
