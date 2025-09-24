@@ -85,6 +85,15 @@ build/
 backend/.env
 backend/.env.local
 
+# Upload directories (should not be in repo)
+backend/uploads/
+mobile/uploads/
+uploads/
+
+# Package lock files (can cause conflicts)
+package-lock.json
+**/package-lock.json
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
