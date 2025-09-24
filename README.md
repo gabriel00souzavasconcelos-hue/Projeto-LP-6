@@ -62,24 +62,33 @@ Nossa aplicação resolve esses problemas através de um sistema integrado e mod
 
 ## 🎨 Protótipo
 
-*[Seção reservada para as telas - você pode adicionar as imagens aqui]*
+### 📱 Interfaces do Aplicativo
 
-### Principais Telas:
+<div align="center">
 
-1. **Tela de Login**
-   - Seleção de perfil (Paciente/Clínica)
-   - Formulário de autenticação moderno
-   - Navegação para cadastro
+#### **Tela de Login**
+<img src="./assets/screenshots/login.jpg" alt="Tela de Login" width="300"> 
+*Sistema de autenticação dual com seleção de perfil (Paciente/Clínica)*
 
-2. **Lista de Clínicas** 
-   - Busca em tempo real
-   - Cards informativos com dados das clínicas
-   - Filtros por especialização
+#### **Lista de Clínicas Disponíveis**
+<img src="./assets/screenshots/clinicas.jpg" alt="Lista de Clínicas" width="300"> 
+*Busca inteligente com filtros por especialização médica*
 
-3. **Menu da Clínica**
-   - Perfil completo da clínica
-   - Opções de edição
-   - Informações de contato e especializações
+#### **Menu de Gerenciamento da Clínica**
+<img src="./assets/screenshots/menu-clinica.jpg" alt="Menu da Clínica" width="300">
+*Painel administrativo completo para clínicas médicas*
+
+#### **Cadastro de Paciente**
+<img src="./assets/screenshots/cadastro-paciente.jpg" alt="Cadastro de Paciente" width="300">
+*Formulário completo com validação de dados e formatação automática*
+
+#### **Cadastro de Clínica**
+<img src="./assets/screenshots/cadastro-clinica.jpg" alt="Cadastro de Clínica" width="300">
+*Sistema de registro com upload de imagem e dados institucionais*
+
+</div>
+
+
 
 ## 📊 Dados - Modelo de Entidade e Relacionamento (DER)
 
