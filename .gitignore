@@ -35,6 +35,15 @@ bower_components
 # node_modules is the most important one
 node_modules/
 */node_modules/
+**/node_modules/
+
+# Package lock files (too much noise for version control)
+package-lock.json
+*/package-lock.json
+**/package-lock.json
+yarn.lock
+*/yarn.lock
+**/.package-lock.json
 
 # Compiled TypeScript
 dist/
