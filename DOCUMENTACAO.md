@@ -2,48 +2,7 @@
 
 Aqui está a documentação da arquitetura do banco de dados e do fluxo da API do projeto.
 
-## 1. Diagrama do Banco de Dados (ERD)
-
-Este diagrama mostra as entidades do banco de dados e seus relacionamentos.
-
-```mermaid
-erDiagram
-    pacientes {
-        INT codigo PK
-        VARCHAR nome
-        DATE datan
-        VARCHAR fone
-        VARCHAR ende
-        VARCHAR email UK
-        VARCHAR senha
-    }
-
-    clinicas {
-        INT codigo PK
-        VARCHAR nome
-        VARCHAR endereco
-        VARCHAR fone
-        VARCHAR email UK
-        VARCHAR senha
-        TEXT imagem
-    }
-
-    especializacoes {
-        INT codigo PK
-        VARCHAR nome UK
-    }
-
-    clinicas_especializacoes {
-        INT codigo_clinica FK
-        INT codigo_especializacao FK
-    }
-
-    clinicas ||--|{ clinicas_especializacoes : "possui"
-    especializacoes ||--|{ clinicas_especializacoes : "possui"
-}
-```
-
-## 2. Diagrama de Fluxo da API
+## 1. Diagrama de Fluxo da API
 
 Este diagrama ilustra como uma requisição HTTP é processada pelas diferentes camadas do backend.
 
@@ -71,7 +30,7 @@ graph TD
     C -- "6. Formata a resposta JSON" --> A
 ```
 
-## 3. Detalhamento da API (Endpoints)
+## 2. Detalhamento da API (Endpoints)
 
 A seguir estão os detalhes de cada endpoint da API.
 
