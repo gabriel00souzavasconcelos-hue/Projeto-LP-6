@@ -4,7 +4,9 @@ import { clinicService, ClinicData, UpdateClinicData } from '../services/clinicS
 export class ClinicController {
   async getAllClinics(req: Request, res: Response) {
     try {
-      const clinics = await clinicService.getAllClinics();
+      const { specialization } = req.query;
+      const filters = specialization ? { specialization: specialization as string } : undefined;
+      const clinics = await clinicService.getAllClinics(filters);
       res.json(clinics);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
@@ -48,6 +50,41 @@ export class ClinicController {
     try {
       const codigo = Number(req.params.codigo);
       const result = await clinicService.deleteClinic(codigo);
+      res.json(result);
+    } catch (error: any) {
+      const statusCode = error.message.includes('Código inválido') ? 400 : 400;
+      res.status(statusCode).json({ error: error.message });
+    }
+  }
+
+  async getClinicSpecializations(req: Request, res: Response) {
+    try {
+      const codigo = Number(req.params.codigo);
+      const specializations = await clinicService.getClinicSpecializations(codigo);
+      res.json(specializations);
+    } catch (error: any) {
+      const statusCode = error.message.includes('Código inválido') ? 400 : 404;
+      res.status(statusCode).json({ error: error.message });
+    }
+  }
+
+  async addSpecializationToClinic(req: Request, res: Response) {
+    try {
+      const codigo = Number(req.params.codigo);
+      const { codigo_especializacao } = req.body;
+      const result = await clinicService.addSpecializationToClinic(codigo, codigo_especializacao);
+      res.json(result);
+    } catch (error: any) {
+      const statusCode = error.message.includes('Código inválido') ? 400 : 400;
+      res.status(statusCode).json({ error: error.message });
+    }
+  }
+
+  async removeSpecializationFromClinic(req: Request, res: Response) {
+    try {
+      const codigo = Number(req.params.codigo);
+      const especializacao = Number(req.params.especializacao);
+      const result = await clinicService.removeSpecializationFromClinic(codigo, especializacao);
       res.json(result);
     } catch (error: any) {
       const statusCode = error.message.includes('Código inválido') ? 400 : 400;

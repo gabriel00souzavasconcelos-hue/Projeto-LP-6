@@ -1,5 +1,5 @@
 import React from "react";
-import RootNavigator from "./src/navigation";
+import RootNavigator from "./src/navigation/RootNavigator";
 
 const NavigationLibrary = require("@react-navigation/native");
 const NavigationContainer = NavigationLibrary.NavigationContainer;

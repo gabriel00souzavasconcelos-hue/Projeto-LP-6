@@ -6,6 +6,7 @@ import ModernInput from "../components/ModernInput";
 import ModernButton from "../components/ModernButton";
 import ModernCard from "../components/ModernCard";
 import { colors, spacing, fontSize, fontWeight, borderRadius } from "../styles/theme";
+import { formatDateInput, convertDateToISO, validateDateFormat } from "../utils/dateUtils";
 
 type Props = {
   navigation: any;
@@ -25,8 +26,16 @@ export default function RegisterPatient({ navigation }: Props) {
       return;
     }
 
+    // Validar formato da data se foi fornecida
+    if (datan && datan.length > 0 && !validateDateFormat(datan)) {
+      Alert.alert("Erro", "Formato de data inválido. Use DD/MM/YYYY");
+      return;
+    }
+
     try {
-      const payload = { nome, datan, fone, ende, email, senha };
+      // Converter data para formato ISO se foi fornecida
+      const datanISO = datan && datan.length > 0 ? convertDateToISO(datan) : datan;
+      const payload = { nome, datan: datanISO, fone, ende, email, senha };
       await authRegister("paciente", payload);
       Alert.alert("Sucesso", "Paciente cadastrado com sucesso!", [
         { text: "OK", onPress: () => navigation.goBack() }
@@ -57,15 +66,17 @@ export default function RegisterPatient({ navigation }: Props) {
           />
 
           <ModernInput
-            label="Data de Nascimento"
+            label="Data de Nascimento (opcional)"
             value={datan}
-            onChangeText={setDatan}
-            placeholder="YYYY-MM-DD (ex: 1990-01-15)"
-            helperText="Formato: Ano-Mês-Dia"
+            onChangeText={(text) => setDatan(formatDateInput(text))}
+            placeholder="DD/MM/YYYY (ex: 15/01/1990)"
+            helperText="Formato: Dia/Mês/Ano"
+            keyboardType="numeric"
+            maxLength={10}
           />
 
           <ModernInput
-            label="Telefone"
+            label="Telefone (opcional)"
             value={fone}
             onChangeText={setFone}
             placeholder="(11) 99999-9999"
@@ -73,7 +84,7 @@ export default function RegisterPatient({ navigation }: Props) {
           />
 
           <ModernInput
-            label="Endereço"
+            label="Endereço (opcional)"
             value={ende}
             onChangeText={setEnde}
             placeholder="Rua, número, bairro, cidade"

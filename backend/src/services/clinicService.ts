@@ -19,16 +19,72 @@ export interface UpdateClinicData {
 }
 
 export class ClinicService {
-  async getAllClinics() {
-    const { data, error } = await supabase
-      .from('clinicas')
-      .select('*');
+  async getAllClinics(filters?: { specialization?: string }) {
+    try {
+      if (filters?.specialization) {
+        // Query clinics with specific specialization
+        const { data, error } = await supabase
+          .from('clinicas')
+          .select(`
+            codigo,
+            nome,
+            endereco,
+            fone,
+            email,
+            imagem,
+            clinicas_especializacoes!inner(
+              especializacao:especializacoes!inner(
+                nome
+              )
+            )
+          `)
+          .eq('clinicas_especializacoes.especializacao.nome', filters.specialization);
 
-    if (error) {
-      throw new Error(error.message);
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        // Transform data to include specializations array
+        const transformedData = data?.map(clinic => ({
+          ...clinic,
+          especializacoes: clinic.clinicas_especializacoes?.map((ce: any) => ce.especializacao?.nome).filter(Boolean) || []
+        }));
+
+        return transformedData || [];
+      } else {
+        // Query all clinics with their specializations
+        const { data, error } = await supabase
+          .from('clinicas')
+          .select(`
+            codigo,
+            nome,
+            endereco,
+            fone,
+            email,
+            imagem,
+            clinicas_especializacoes(
+              especializacao:especializacoes(
+                nome
+              )
+            )
+          `);
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        // Transform data to include specializations array
+        const transformedData = data?.map(clinic => ({
+          ...clinic,
+          especializacoes: clinic.clinicas_especializacoes?.map((ce: any) => ce.especializacao?.nome).filter(Boolean) || []
+        }));
+
+        return transformedData || [];
+      }
+    } catch (error) {
+      console.error('Error fetching clinics:', error);
+      throw error;
     }
-
-    return data;
   }
 
   async getClinicById(codigo: number) {
@@ -36,18 +92,44 @@ export class ClinicService {
       throw new Error('Código inválido');
     }
 
-    const { data, error } = await supabase
-      .from('clinicas')
-      .select('*')
-      .eq('codigo', codigo)
-      .limit(1)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('clinicas')
+        .select(`
+          codigo,
+          nome,
+          endereco,
+          fone,
+          email,
+          imagem,
+          clinicas_especializacoes(
+            especializacao:especializacoes(
+              nome
+            )
+          )
+        `)
+        .eq('codigo', codigo)
+        .single();
 
-    if (error) {
-      throw new Error(error.message);
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data) {
+        throw new Error('Clinic not found');
+      }
+
+      // Transform data to include specializations array
+      const transformedData = {
+        ...data,
+        especializacoes: data.clinicas_especializacoes?.map((ce: any) => ce.especializacao?.nome).filter(Boolean) || []
+      };
+
+      return transformedData;
+    } catch (error) {
+      console.error('Error fetching clinic by id:', error);
+      throw error;
     }
-
-    return data;
   }
 
   async createClinic(clinicData: ClinicData) {
@@ -116,6 +198,67 @@ export class ClinicService {
     }
 
     return { success: true };
+  }
+
+  async getClinicSpecializations(clinicId: number) {
+    try {
+      const { data, error } = await supabase
+        .from('clinicas_especializacoes')
+        .select(`
+          especializacao:especializacoes(
+            nome
+          )
+        `)
+        .eq('codigo_clinica', clinicId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data?.map(item => item.especializacao).filter(Boolean) || [];
+    } catch (error) {
+      console.error('Error fetching clinic specializations:', error);
+      throw error;
+    }
+  }
+
+  async addSpecializationToClinic(clinicId: number, specializationId: number) {
+    try {
+      const { error } = await supabase
+        .from('clinicas_especializacoes')
+        .insert({
+          codigo_clinica: clinicId,
+          codigo_especializacao: specializationId
+        });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error adding specialization to clinic:', error);
+      throw error;
+    }
+  }
+
+  async removeSpecializationFromClinic(clinicId: number, specializationId: number) {
+    try {
+      const { error } = await supabase
+        .from('clinicas_especializacoes')
+        .delete()
+        .eq('codigo_clinica', clinicId)
+        .eq('codigo_especializacao', specializationId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error removing specialization from clinic:', error);
+      throw error;
+    }
   }
 }
 

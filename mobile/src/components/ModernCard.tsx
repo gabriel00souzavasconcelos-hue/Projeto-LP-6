@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { colors, spacing, borderRadius, shadows } from '../styles/theme';
+import { colors, spacing, borderRadius } from '../styles/theme';
 
 interface ModernCardProps {
   children: React.ReactNode;
@@ -31,10 +31,10 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
   },
   default: {
-    ...shadows.small,
+    // Clean iOS style - no shadows
   },
   elevated: {
-    ...shadows.medium,
+    // Clean iOS style - no shadows
   },
   outlined: {
     borderWidth: 1,

@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
 import { RootStackParamList } from "../navigation";
-import { authRegister } from "../api/client";
+import { authRegister, uploadImage } from "../api/client";
 import ModernInput from "../components/ModernInput";
 import ModernButton from "../components/ModernButton";
 import ModernCard from "../components/ModernCard";
-import { colors, spacing, fontSize, fontWeight, borderRadius } from "../styles/theme";
+import CircularImage from "../components/CircularImage";
+import { useImagePicker } from "../hooks/useImagePicker";
+import { colors, spacing, fontSize, fontWeight } from "../styles/theme";
 
 type Props = {
   navigation: any;
@@ -18,6 +20,9 @@ export default function RegisterClinic({ navigation }: Props) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [imagem, setImagem] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+  const { image, showImageOptions, setUploading } = useImagePicker();
 
   async function handleRegister() {
     if (!nome || !email || !senha) {
@@ -26,7 +31,24 @@ export default function RegisterClinic({ navigation }: Props) {
     }
 
     try {
-      const payload = { nome, endereco, fone, email, senha, imagem: imagem || null };
+      setLoading(true);
+      
+      // Upload da imagem se houver uma selecionada
+      let imagemUrl = imagem;
+      if (image.uri && image.uri !== imagem) {
+        try {
+          setUploading(true);
+          imagemUrl = await uploadImage(image.uri);
+          setUploading(false);
+        } catch (uploadError) {
+          console.warn('Erro no upload da imagem:', uploadError);
+          setUploading(false);
+          // Continue sem a imagem se o upload falhar
+          imagemUrl = '';
+        }
+      }
+
+      const payload = { nome, endereco, fone, email, senha, imagem: imagemUrl || null };
       await authRegister("clinica", payload);
       Alert.alert("Sucesso", "Clínica cadastrada com sucesso!", [
         { text: "OK", onPress: () => navigation.goBack() }
@@ -35,6 +57,8 @@ export default function RegisterClinic({ navigation }: Props) {
       console.error(err);
       const errorMessage = err?.response?.data?.error || "Não foi possível cadastrar a clínica.";
       Alert.alert("Erro", errorMessage);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -49,6 +73,21 @@ export default function RegisterClinic({ navigation }: Props) {
       
       <ModernCard variant="elevated" style={styles.formCard}>
         <View style={styles.form}>
+          {/* Preview da Imagem */}
+          <View style={styles.imageContainer}>
+            <Text style={styles.imageLabel}>Foto da Clínica</Text>
+            <CircularImage 
+              uri={image.uri}
+              size={120}
+              onPress={showImageOptions}
+              showEditButton={true}
+              loading={image.isUploading}
+            />
+            <Text style={styles.imageHelperText}>
+              Toque para selecionar uma imagem
+            </Text>
+          </View>
+
           <ModernInput
             label="Nome da Clínica *"
             value={nome}
@@ -57,7 +96,7 @@ export default function RegisterClinic({ navigation }: Props) {
           />
 
           <ModernInput
-            label="Endereço"
+            label="Endereço (opcional)"
             value={endereco}
             onChangeText={setEndereco}
             placeholder="Endereço completo da clínica"
@@ -66,7 +105,7 @@ export default function RegisterClinic({ navigation }: Props) {
           />
 
           <ModernInput
-            label="Telefone"
+            label="Telefone (opcional)"
             value={fone}
             onChangeText={setFone}
             placeholder="(11) 99999-9999"
@@ -104,10 +143,11 @@ export default function RegisterClinic({ navigation }: Props) {
       
       <View style={styles.actionButtons}>
         <ModernButton
-          title="Cadastrar Clínica"
+          title={loading ? "Cadastrando..." : "Cadastrar Clínica"}
           onPress={handleRegister}
           size="large"
           fullWidth
+          disabled={loading}
         />
         
         <ModernButton
@@ -152,6 +192,22 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: spacing.sm,
+  },
+  imageContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  imageLabel: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  imageHelperText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
   actionButtons: {
     gap: spacing.md,

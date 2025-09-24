@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { colors, spacing, borderRadius, fontSize, fontWeight, shadows } from '../styles/theme';
+import { colors, spacing, borderRadius, fontSize, fontWeight } from '../styles/theme';
 
 interface ModernButtonProps {
   title: string;
@@ -54,7 +54,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.small,
   },
   
   // Variants
@@ -93,7 +92,6 @@ const styles = StyleSheet.create({
   // States
   disabled: {
     opacity: 0.6,
-    ...shadows.small,
   },
   fullWidth: {
     width: '100%',

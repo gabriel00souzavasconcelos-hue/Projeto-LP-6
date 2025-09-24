@@ -1,13 +1,52 @@
 import axios from "axios";
 import { Clinic, Patient, Specialization } from "../types";
 
-export const BASE_URL = "http://192.168.2.233:4000"; 
+export const BASE_URL = "http://192.168.100.36:4000"; 
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 30000,
 });
 
+// Add request interceptor for debugging
+api.interceptors.request.use(request => {
+  console.log('Starting Request:', request.method?.toUpperCase(), request.url);
+  return request;
+});
+
+// Add response interceptor for debugging
+api.interceptors.response.use(
+  response => {
+    console.log('Response:', response.status, response.config.url);
+    return response;
+  },
+  error => {
+    console.log('Request failed:', error.config?.url, error.message);
+    return Promise.reject(error);
+  }
+);
+
+// Image upload utility
+export async function uploadImage(imageUri: string) {
+  const formData = new FormData();
+  const filename = imageUri.split('/').pop() || 'image.jpg';
+  const match = /\.(\w+)$/.exec(filename);
+  const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+  formData.append('image', {
+    uri: imageUri,
+    name: filename,
+    type,
+  } as any);
+
+  const response = await api.post('/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  
+  return response.data.imageUrl;
+}
 
 export async function authLogin(email: string, senha: string, role: "paciente" | "clinica") {
   const res = await api.post("/auth/login", { email, senha, role });
@@ -53,6 +92,42 @@ export async function updateClinic(id: number, payload: Partial<Clinic>) {
 export async function getSpecializations() {
   const res = await api.get("/specializations");
   return res.data as Specialization[];
+}
+
+export async function createSpecialization(nome: string) {
+  const res = await api.post("/specializations", { nome });
+  return res.data as Specialization;
+}
+
+export async function getClinicSpecializations(clinicCode: number) {
+  const res = await api.get(`/clinics/${clinicCode}/specializations`);
+  return res.data as Specialization[];
+}
+
+export async function addSpecializationToClinic(clinicCode: number, specializationName: string) {
+  // First find the specialization by name
+  const specializations = await getSpecializations();
+  const specialization = specializations.find(s => s.nome === specializationName);
+  if (!specialization) {
+    throw new Error('Especialização não encontrada');
+  }
+  
+  const res = await api.post(`/clinics/${clinicCode}/specializations`, { 
+    codigo_especializacao: specialization.codigo 
+  });
+  return res.data;
+}
+
+export async function removeSpecializationFromClinic(clinicCode: number, specializationName: string) {
+  // First find the specialization by name
+  const specializations = await getSpecializations();
+  const specialization = specializations.find(s => s.nome === specializationName);
+  if (!specialization) {
+    throw new Error('Especialização não encontrada');
+  }
+  
+  const res = await api.delete(`/clinics/${clinicCode}/specializations/${specialization.codigo}`);
+  return res.data;
 }
 
 export default api;

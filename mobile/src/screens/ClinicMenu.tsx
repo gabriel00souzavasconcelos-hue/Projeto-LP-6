@@ -74,6 +74,22 @@ export default function ClinicMenu({ route, navigation }: Props) {
         <ModernCard variant="outlined" style={styles.actionCard}>
           <View style={styles.actionContent}>
             <View style={styles.actionInfo}>
+              <Text style={styles.actionTitle}>⚕️ Especialidades</Text>
+              <Text style={styles.actionDescription}>
+                Gerencie as especialidades médicas da clínica
+              </Text>
+            </View>
+            <ModernButton
+              title="Gerenciar"
+              onPress={() => navigation.navigate("SpecializationsScreen", { clinicCode: clinic?.codigo })}
+              size="small"
+            />
+          </View>
+        </ModernCard>
+
+        <ModernCard variant="outlined" style={styles.actionCard}>
+          <View style={styles.actionContent}>
+            <View style={styles.actionInfo}>
               <Text style={styles.actionTitle}>👥 Pacientes</Text>
               <Text style={styles.actionDescription}>
                 Gerencie consultas e histórico dos pacientes
@@ -95,24 +111,6 @@ export default function ClinicMenu({ route, navigation }: Props) {
               <Text style={styles.actionTitle}>📅 Agenda</Text>
               <Text style={styles.actionDescription}>
                 Visualize e gerencie seus horários de atendimento
-              </Text>
-            </View>
-            <ModernButton
-              title="Em breve"
-              onPress={() => {}}
-              variant="ghost"
-              size="small"
-              disabled
-            />
-          </View>
-        </ModernCard>
-
-        <ModernCard variant="outlined" style={styles.actionCard}>
-          <View style={styles.actionContent}>
-            <View style={styles.actionInfo}>
-              <Text style={styles.actionTitle}>🏷️ Especialidades</Text>
-              <Text style={styles.actionDescription}>
-                Configure as especialidades oferecidas
               </Text>
             </View>
             <ModernButton
@@ -209,7 +207,7 @@ const styles = StyleSheet.create({
   clinicImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
   clinicPlaceholder: {
     width: '100%',
