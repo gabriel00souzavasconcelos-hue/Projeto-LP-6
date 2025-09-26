@@ -1,8 +1,24 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert, RefreshControl, TouchableOpacity, Image } from "react-native";
-import ModernCard from "../components/ModernCard";
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
+import ClinicCard from "../components/ClinicCard";
 import ModernInput from "../components/ModernInput";
-import { colors, spacing, fontSize, fontWeight, borderRadius } from "../styles/theme";
+import {
+  colors,
+  spacing,
+  fontSize,
+  fontWeight,
+  borderRadius,
+} from "../styles/theme";
 import { getClinics } from "../api/client";
 import { Clinic } from "../types";
 import { useSpecializations } from "../hooks/useSpecializations";
@@ -11,106 +27,61 @@ type Props = {
   navigation: any;
 };
 
-const ModernClinicCard = ({ clinic, onPress }: { clinic: Clinic; onPress: () => void }) => (
-  <TouchableOpacity onPress={onPress}>
-    <ModernCard style={styles.clinicCard}>
-      <View style={styles.clinicCardContent}>
-        <View style={styles.clinicImageContainer}>
-          <Image 
-            source={clinic.imagem ? { uri: clinic.imagem } : require('../../assets/clinic-placeholder.jpg')}
-            style={styles.clinicImage}
-            resizeMode="contain"
-          />
-        </View>
-        <View style={styles.clinicInfo}>
-          <Text style={styles.clinicName}>{clinic.nome}</Text>
-          <Text style={styles.clinicAddress}>📍 {clinic.endereco || 'Endereço não informado'}</Text>
-          <Text style={styles.clinicPhone}>📞 {clinic.fone || 'Telefone não informado'}</Text>
-          <Text style={styles.clinicEmail}>✉️ {clinic.email || 'Email não informado'}</Text>
-          {clinic.especializacoes && clinic.especializacoes.length > 0 && (
-            <View style={styles.specializationsContainer}>
-              {clinic.especializacoes.slice(0, 3).map((spec, index) => (
-                <View key={index} style={styles.specializationTag}>
-                  <Text style={styles.specializationText}>{spec}</Text>
-                </View>
-              ))}
-              {clinic.especializacoes.length > 3 && (
-                <View style={styles.specializationTag}>
-                  <Text style={styles.specializationText}>+{clinic.especializacoes.length - 3}</Text>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-      </View>
-    </ModernCard>
-  </TouchableOpacity>
-);
-
 export default function ClinicList({ navigation }: Props) {
   const [clinics, setClinics] = useState<Clinic[]>([]);
-  const [filteredClinics, setFilteredClinics] = useState<Clinic[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSpecialization, setSelectedSpecialization] = useState<string>("");
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
   const { specializations } = useSpecializations();
 
-  useEffect(() => {
-    fetchClinics();
-  }, []);
-
-  useEffect(() => {
-    filterClinics();
-  }, [searchTerm, selectedSpecialization, clinics]);
-
-  const fetchClinics = async (specialization?: string) => {
+  const fetchClinics = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const data = await getClinics(specialization);
+      const data = await getClinics();
       setClinics(data);
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível carregar clínicas.");
+      Alert.alert("Erro", "Não foi possível carregar as clínicas.");
     } finally {
       setLoading(false);
     }
   };
 
-  const filterClinics = () => {
+  useEffect(() => {
+    fetchClinics();
+  }, []);
+
+  const filteredClinics = useMemo(() => {
     let filtered = clinics;
 
-    if (searchTerm) {
-      filtered = filtered.filter(clinic =>
-        clinic.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        clinic.endereco?.toLowerCase().includes(searchTerm.toLowerCase())
+    if (activeFilter) {
+      filtered = filtered.filter((clinic) =>
+        clinic.especializacoes?.includes(activeFilter)
       );
     }
 
-    setFilteredClinics(filtered);
-  };
-
-  const handleSearch = (text: string) => {
-    setSearchTerm(text);
-    setSelectedSpecialization(""); // Clear specialization filter when searching
-  };
-
-  const handleSpecializationFilter = (specializationName: string) => {
-    if (selectedSpecialization === specializationName) {
-      // Remove filter
-      setSelectedSpecialization("");
-      setSearchTerm(""); // Clear search when removing filter
-      fetchClinics();
-    } else {
-      // Apply filter
-      setSelectedSpecialization(specializationName);
-      setSearchTerm(""); // Clear search when applying filter
-      fetchClinics(specializationName);
+    if (searchTerm) {
+      const lowercasedTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (clinic) =>
+          clinic.nome.toLowerCase().includes(lowercasedTerm) ||
+          clinic.endereco?.toLowerCase().includes(lowercasedTerm)
+      );
     }
+
+    return filtered;
+  }, [clinics, searchTerm, activeFilter]);
+
+  const onRefresh = () => {
+    setSearchTerm("");
+    setActiveFilter(null);
+    fetchClinics();
   };
 
   const renderClinicItem = ({ item }: { item: Clinic }) => (
-    <ModernClinicCard 
-      clinic={item} 
-      onPress={() => navigation.navigate("ClinicDetails", { clinicId: item.codigo })} 
+    <ClinicCard
+      clinic={item}
+      onPress={() => navigation.navigate("ClinicDetails", { clinicId: item.codigo })}
     />
   );
 
@@ -118,105 +89,86 @@ export default function ClinicList({ navigation }: Props) {
     <View style={styles.emptyState}>
       <Text style={styles.emptyStateTitle}>Nenhuma clínica encontrada</Text>
       <Text style={styles.emptyStateText}>
-        Tente ajustar sua busca ou filtros
+        Tente ajustar sua busca ou filtros, ou puxe para recarregar.
       </Text>
     </View>
   );
 
+  const SpecializationFilters = () => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.filtersContainer}
+    >
+      <TouchableOpacity
+        style={[styles.filterChip, !activeFilter && styles.filterChipActive]}
+        onPress={() => setActiveFilter(null)}
+      >
+        <Text style={[styles.filterText, !activeFilter && styles.filterTextActive]}>
+          Todas
+        </Text>
+      </TouchableOpacity>
+      {specializations.map((spec) => (
+        <TouchableOpacity
+          key={spec.codigo}
+          style={[
+            styles.filterChip,
+            activeFilter === spec.nome && styles.filterChipActive,
+          ]}
+          onPress={() => setActiveFilter(spec.nome)}
+        >
+          <Text
+            style={[
+              styles.filterText,
+              activeFilter === spec.nome && styles.filterTextActive,
+            ]}
+          >
+            {spec.nome}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Clínicas Disponíveis</Text>
-        <Text style={styles.subtitle}>Encontre a clínica ideal para você</Text>
-      </View>
-
-      {/* Search and Filters */}
-      <ModernCard style={styles.searchCard}>
+        <Text style={styles.title}>Encontre uma Clínica</Text>
         <View style={styles.searchContainer}>
           <ModernInput
-            label="Buscar clínicas"
             value={searchTerm}
-            onChangeText={handleSearch}
-            placeholder="Digite o nome da clínica ou endereço"
+            onChangeText={setSearchTerm}
+            placeholder="Buscar por nome ou endereço..."
+            icon="search-outline"
+            style={{ backgroundColor: colors.surface, borderWidth: 0 }}
           />
-          
-          {/* Specialization Filters */}
-          <View style={styles.filtersSection}>
-            <Text style={styles.filtersTitle}>🏥 Filtrar por Especialização:</Text>
-            <View style={styles.specializationFilters}>
-              <TouchableOpacity
-                style={[
-                  styles.specializationFilter,
-                  !selectedSpecialization && styles.selectedFilter
-                ]}
-                onPress={() => handleSpecializationFilter("")}
-              >
-                <Text style={[
-                  styles.filterText,
-                  !selectedSpecialization && styles.selectedFilterText
-                ]}>
-                  Todas
-                </Text>
-              </TouchableOpacity>
-              
-              {specializations.map((spec) => (
-                <TouchableOpacity
-                  key={spec.codigo || spec.nome}
-                  style={[
-                    styles.specializationFilter,
-                    selectedSpecialization === spec.nome && styles.selectedFilter
-                  ]}
-                  onPress={() => handleSpecializationFilter(spec.nome)}
-                >
-                  <Text style={[
-                    styles.filterText,
-                    selectedSpecialization === spec.nome && styles.selectedFilterText
-                  ]}>
-                    {spec.nome}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            
-            {selectedSpecialization && (
-              <Text style={styles.filterStatus}>
-                📍 Mostrando clínicas com "{selectedSpecialization}"
-              </Text>
-            )}
-          </View>
         </View>
-      </ModernCard>
-
-      {/* Results */}
-      <View style={styles.resultsContainer}>
-        <Text style={styles.resultsCount}>
-          {filteredClinics.length} clínica{filteredClinics.length !== 1 ? 's' : ''} encontrada{filteredClinics.length !== 1 ? 's' : ''}
-        </Text>
-        
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Carregando clínicas...</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={filteredClinics}
-            renderItem={renderClinicItem}
-            keyExtractor={(item) => item.codigo.toString()}
-            showsVerticalScrollIndicator={false}
-            style={styles.clinicsList}
-            ListEmptyComponent={renderEmptyState}
-            refreshControl={
-              <RefreshControl
-                refreshing={loading}
-                onRefresh={fetchClinics}
-                colors={[colors.primary]}
-              />
-            }
-          />
-        )}
       </View>
+
+      <SpecializationFilters />
+
+      {loading && !clinics.length ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Carregando clínicas...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredClinics}
+          renderItem={renderClinicItem}
+          keyExtractor={(item) => item.codigo.toString()}
+          ListEmptyComponent={renderEmptyState}
+          contentContainerStyle={styles.listContentContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={onRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+        />
+      )}
     </View>
   );
 }
@@ -225,163 +177,76 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    padding: spacing.md,
   },
   header: {
-    marginBottom: spacing.lg,
+    backgroundColor: colors.primary,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
   },
   title: {
-    fontSize: fontSize.xl,
+    fontSize: fontSize.xxxl,
     fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-  },
-  searchCard: {
-    marginBottom: spacing.md,
+    color: colors.onPrimary,
+    textAlign: "center",
+    marginBottom: spacing.lg,
   },
   searchContainer: {
-    gap: spacing.md,
+    marginTop: spacing.md,
   },
-  resultsContainer: {
-    flex: 1,
+  filtersContainer: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
-  resultsCount: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
+  filterChip: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.round,
+    marginRight: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterChipActive: {
+    backgroundColor: colors.primaryDark,
+    borderColor: colors.primaryDark,
+  },
+  filterText: {
+    color: colors.text,
+    fontWeight: fontWeight.medium,
+  },
+  filterTextActive: {
+    color: colors.onPrimary,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
     marginTop: spacing.md,
-  },
-  clinicsList: {
-    flex: 1,
-  },
-  clinicCard: {
-    marginBottom: spacing.md,
-  },
-  clinicCardContent: {
-    flexDirection: 'row',
-  },
-  clinicImageContainer: {
-    marginRight: spacing.md,
-  },
-  clinicImage: {
-    width: 80,
-    height: 80,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.surface,
-  },
-  clinicInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  clinicName: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  clinicAddress: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  clinicPhone: {
-    fontSize: fontSize.sm,
     color: colors.textSecondary,
   },
-  clinicEmail: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  specializationsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: spacing.xs,
-  },
-  specializationTag: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: borderRadius.sm,
-    marginRight: spacing.xs,
-    marginBottom: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  specializationText: {
-    fontSize: fontSize.xs,
-    color: colors.primary,
-    fontWeight: fontWeight.semibold,
+  listContentContainer: {
+    padding: spacing.lg,
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: spacing.xl,
+    marginTop: spacing.xxl,
   },
   emptyStateTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
     color: colors.text,
     marginBottom: spacing.sm,
   },
   emptyStateText: {
     fontSize: fontSize.md,
     color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  filtersSection: {
-    marginTop: spacing.md,
-  },
-  filtersTitle: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  specializationFilters: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  specializationFilter: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  selectedFilter: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  filterText: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    color: colors.text,
-  },
-  selectedFilterText: {
-    color: colors.onPrimary,
-  },
-  filterStatus: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
-    textAlign: 'center',
-    fontStyle: 'italic',
+    textAlign: "center",
   },
 });

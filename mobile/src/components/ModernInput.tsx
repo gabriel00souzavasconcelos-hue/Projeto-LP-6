@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { TextInput, View, Text, StyleSheet, TextInputProps } from 'react-native';
 import { colors, spacing, borderRadius, fontSize, fontWeight } from '../styles/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 interface ModernInputProps extends TextInputProps {
   label?: string;
   error?: string;
   helperText?: string;
-  leftIcon?: React.ReactNode;
+  icon?: keyof typeof Ionicons.glyphMap;
   rightIcon?: React.ReactNode;
 }
 
@@ -14,7 +15,7 @@ export default function ModernInput({
   label,
   error,
   helperText,
-  leftIcon,
+  icon,
   rightIcon,
   style,
   ...props
@@ -29,10 +30,18 @@ export default function ModernInput({
 
   const inputStyle = [
     styles.input,
-    leftIcon && styles.inputWithLeftIcon,
+    icon && styles.inputWithLeftIcon,
     rightIcon && styles.inputWithRightIcon,
     style,
   ];
+
+  const leftIcon = icon ? (
+    <Ionicons
+      name={icon}
+      size={20}
+      color={isFocused ? colors.primary : colors.textSecondary}
+    />
+  ) : null;
 
   return (
     <View style={styles.container}>
@@ -69,14 +78,14 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     color: colors.text,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceVariant,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: 'transparent',
     borderRadius: borderRadius.md,
     paddingHorizontal: spacing.md,
   },
@@ -95,7 +104,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   inputWithLeftIcon: {
-    marginLeft: spacing.sm,
+    paddingLeft: spacing.sm,
   },
   inputWithRightIcon: {
     marginRight: spacing.sm,

@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Clinic, Patient, Specialization } from "../types";
 
-export const BASE_URL = "http://192.168.100.36:4000"; 
+export const BASE_URL = "http://192.168.100.155:4000"; //192.168.100.155
 
 const api = axios.create({
   baseURL: BASE_URL,

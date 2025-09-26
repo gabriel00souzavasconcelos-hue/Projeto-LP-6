@@ -1,12 +1,30 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
-import { RootStackParamList } from "../navigation";
-import { authRegister } from "../api/client";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import ModernInput from "../components/ModernInput";
 import ModernButton from "../components/ModernButton";
-import ModernCard from "../components/ModernCard";
-import { colors, spacing, fontSize, fontWeight, borderRadius } from "../styles/theme";
-import { formatDateInput, convertDateToISO, validateDateFormat } from "../utils/dateUtils";
+import {
+  colors,
+  spacing,
+  fontSize,
+  fontWeight,
+  borderRadius,
+} from "../styles/theme";
+import { authRegister } from "../api/client";
+import {
+  formatDateInput,
+  convertDateToISO,
+  validateDateFormat,
+} from "../utils/dateUtils";
 
 type Props = {
   navigation: any;
@@ -22,148 +40,194 @@ export default function RegisterPatient({ navigation }: Props) {
 
   async function handleRegister() {
     if (!nome || !email || !senha) {
-      Alert.alert("Erro", "Nome, email e senha são obrigatórios");
+      Alert.alert(
+        "Campos Obrigatórios",
+        "Nome, email e senha são necessários para o cadastro."
+      );
       return;
     }
 
-    // Validar formato da data se foi fornecida
     if (datan && datan.length > 0 && !validateDateFormat(datan)) {
-      Alert.alert("Erro", "Formato de data inválido. Use DD/MM/YYYY");
+      Alert.alert(
+        "Data Inválida",
+        "O formato da data de nascimento deve ser DD/MM/AAAA."
+      );
       return;
     }
 
     try {
-      // Converter data para formato ISO se foi fornecida
-      const datanISO = datan && datan.length > 0 ? convertDateToISO(datan) : datan;
+      const datanISO = datan ? convertDateToISO(datan) : undefined;
       const payload = { nome, datan: datanISO, fone, ende, email, senha };
       await authRegister("paciente", payload);
-      Alert.alert("Sucesso", "Paciente cadastrado com sucesso!", [
-        { text: "OK", onPress: () => navigation.goBack() }
+      Alert.alert("Cadastro Realizado!", "Seu cadastro foi efetuado com sucesso.", [
+        { text: "Ir para Login", onPress: () => navigation.goBack() },
       ]);
     } catch (err: any) {
-      console.error(err);
-      const errorMessage = err?.response?.data?.error || "Não foi possível cadastrar o paciente.";
-      Alert.alert("Erro", errorMessage);
+      console.error("Registration Error:", err);
+      const errorMessage =
+        err?.response?.data?.error ||
+        "Não foi possível realizar o cadastro. Tente novamente.";
+      Alert.alert("Erro no Cadastro", errorMessage);
     }
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      
-      <View style={styles.header}>
-        <Text style={styles.title}>Cadastrar Paciente</Text>
-        <Text style={styles.subtitle}>Preencha seus dados pessoais</Text>
-      </View>
+    <LinearGradient
+      colors={[colors.primaryLight, colors.background, colors.background]}
+      locations={[0, 0.3, 1]}
+      style={styles.container}
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={styles.contentContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Crie sua Conta</Text>
+            <Text style={styles.subtitle}>
+              Preencha seus dados para se cadastrar como paciente
+            </Text>
+          </View>
 
-      
-      <ModernCard variant="elevated" style={styles.formCard}>
-        <View style={styles.form}>
-          <ModernInput
-            label="Nome Completo *"
-            value={nome}
-            onChangeText={setNome}
-            placeholder="Digite seu nome completo"
-          />
+          <View style={styles.formContainer}>
+            <ModernInput
+              label="Nome Completo *"
+              value={nome}
+              onChangeText={setNome}
+              placeholder="Digite seu nome completo"
+              icon="person-outline"
+            />
 
-          <ModernInput
-            label="Data de Nascimento (opcional)"
-            value={datan}
-            onChangeText={(text) => setDatan(formatDateInput(text))}
-            placeholder="DD/MM/YYYY (ex: 15/01/1990)"
-            helperText="Formato: Dia/Mês/Ano"
-            keyboardType="numeric"
-            maxLength={10}
-          />
+            <ModernInput
+              label="Data de Nascimento"
+              value={datan}
+              onChangeText={(text) => setDatan(formatDateInput(text))}
+              placeholder="DD/MM/AAAA"
+              keyboardType="numeric"
+              maxLength={10}
+              icon="calendar-outline"
+            />
 
-          <ModernInput
-            label="Telefone (opcional)"
-            value={fone}
-            onChangeText={setFone}
-            placeholder="(11) 99999-9999"
-            keyboardType="phone-pad"
-          />
+            <ModernInput
+              label="Telefone"
+              value={fone}
+              onChangeText={setFone}
+              placeholder="(XX) XXXXX-XXXX"
+              keyboardType="phone-pad"
+              icon="call-outline"
+            />
 
-          <ModernInput
-            label="Endereço (opcional)"
-            value={ende}
-            onChangeText={setEnde}
-            placeholder="Rua, número, bairro, cidade"
-            multiline
-            numberOfLines={3}
-          />
+            <ModernInput
+              label="Endereço"
+              value={ende}
+              onChangeText={setEnde}
+              placeholder="Sua rua, número, bairro..."
+              icon="location-outline"
+            />
 
-          <ModernInput
-            label="Email *"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="seu@email.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+            <ModernInput
+              label="Email *"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="seu@email.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              icon="mail-outline"
+            />
 
-          <ModernInput
-            label="Senha *"
-            value={senha}
-            onChangeText={setSenha}
-            placeholder="Digite uma senha segura"
-            secureTextEntry
-          />
-        </View>
-      </ModernCard>
+            <ModernInput
+              label="Senha *"
+              value={senha}
+              onChangeText={setSenha}
+              placeholder="Crie uma senha segura"
+              secureTextEntry
+              icon="lock-closed-outline"
+            />
 
-      
-      <View style={styles.actionButtons}>
-        <ModernButton
-          title="Cadastrar Paciente"
-          onPress={handleRegister}
-          size="large"
-          fullWidth
-        />
-        
-        <ModernButton
-          title="Voltar"
-          onPress={() => navigation.goBack()}
-          variant="outline"
-          size="medium"
-          fullWidth
-        />
-      </View>
-    </ScrollView>
+            <ModernButton
+              title="Finalizar Cadastro"
+              onPress={handleRegister}
+              variant="primary"
+              size="large"
+              fullWidth
+              style={styles.registerButton}
+            />
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Já tem uma conta?</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Text style={styles.linkText}>Faça Login</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   contentContainer: {
     flexGrow: 1,
+    justifyContent: "center",
     padding: spacing.lg,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: spacing.xl,
-    marginTop: spacing.lg,
   },
   title: {
-    fontSize: fontSize.xxl,
+    fontSize: fontSize.xxxl,
     fontWeight: fontWeight.bold,
-    color: colors.text,
+    color: colors.primary,
+    textAlign: "center",
     marginBottom: spacing.xs,
   },
   subtitle: {
     fontSize: fontSize.md,
     color: colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
+    maxWidth: "80%",
   },
-  formCard: {
-    marginBottom: spacing.lg,
+  formContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
-  form: {
-    gap: spacing.sm,
+  registerButton: {
+    marginTop: spacing.md,
   },
-  actionButtons: {
-    gap: spacing.md,
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  footerText: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+  },
+  linkText: {
+    fontSize: fontSize.md,
+    color: colors.primary,
+    fontWeight: fontWeight.medium,
+    marginLeft: spacing.xs,
   },
 });

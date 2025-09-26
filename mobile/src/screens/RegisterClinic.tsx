@@ -1,13 +1,27 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
-import { RootStackParamList } from "../navigation";
-import { authRegister, uploadImage } from "../api/client";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import ModernInput from "../components/ModernInput";
 import ModernButton from "../components/ModernButton";
-import ModernCard from "../components/ModernCard";
 import CircularImage from "../components/CircularImage";
 import { useImagePicker } from "../hooks/useImagePicker";
-import { colors, spacing, fontSize, fontWeight } from "../styles/theme";
+import {
+  colors,
+  spacing,
+  fontSize,
+  fontWeight,
+  borderRadius,
+} from "../styles/theme";
+import { authRegister, uploadImage } from "../api/client";
 
 type Props = {
   navigation: any;
@@ -19,9 +33,8 @@ export default function RegisterClinic({ navigation }: Props) {
   const [fone, setFone] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [imagem, setImagem] = useState("");
   const [loading, setLoading] = useState(false);
-  
+
   const { image, showImageOptions, setUploading } = useImagePicker();
 
   async function handleRegister() {
@@ -30,186 +43,196 @@ export default function RegisterClinic({ navigation }: Props) {
       return;
     }
 
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Upload da imagem se houver uma selecionada
-      let imagemUrl = imagem;
-      if (image.uri && image.uri !== imagem) {
+      let imageUrl = "";
+      if (image.uri) {
+        setUploading(true);
         try {
-          setUploading(true);
-          imagemUrl = await uploadImage(image.uri);
-          setUploading(false);
+          imageUrl = await uploadImage(image.uri);
         } catch (uploadError) {
-          console.warn('Erro no upload da imagem:', uploadError);
+          console.warn("Image upload failed, proceeding without it.", uploadError);
+        } finally {
           setUploading(false);
-          // Continue sem a imagem se o upload falhar
-          imagemUrl = '';
         }
       }
 
-      const payload = { nome, endereco, fone, email, senha, imagem: imagemUrl || null };
+      const payload = { nome, endereco, fone, email, senha, imagem: imageUrl || null };
       await authRegister("clinica", payload);
-      Alert.alert("Sucesso", "Clínica cadastrada com sucesso!", [
-        { text: "OK", onPress: () => navigation.goBack() }
+      Alert.alert("Sucesso!", "Clínica cadastrada com sucesso.", [
+        { text: "Ir para Login", onPress: () => navigation.goBack() },
       ]);
     } catch (err: any) {
-      console.error(err);
-      const errorMessage = err?.response?.data?.error || "Não foi possível cadastrar a clínica.";
-      Alert.alert("Erro", errorMessage);
+      const errorMessage =
+        err?.response?.data?.error || "Não foi possível cadastrar a clínica.";
+      Alert.alert("Erro no Cadastro", errorMessage);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      
-      <View style={styles.header}>
-        <Text style={styles.title}>Cadastrar Clínica</Text>
-        <Text style={styles.subtitle}>Preencha os dados da sua clínica</Text>
-      </View>
-
-      
-      <ModernCard variant="elevated" style={styles.formCard}>
-        <View style={styles.form}>
-          {/* Preview da Imagem */}
-          <View style={styles.imageContainer}>
-            <Text style={styles.imageLabel}>Foto da Clínica</Text>
-            <CircularImage 
-              uri={image.uri}
-              size={120}
-              onPress={showImageOptions}
-              showEditButton={true}
-              loading={image.isUploading}
-            />
-            <Text style={styles.imageHelperText}>
-              Toque para selecionar uma imagem
+    <LinearGradient
+      colors={[colors.primaryLight, colors.background, colors.background]}
+      locations={[0, 0.3, 1]}
+      style={styles.container}
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={styles.contentContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Cadastre sua Clínica</Text>
+            <Text style={styles.subtitle}>
+              Preencha os dados para começar
             </Text>
           </View>
 
-          <ModernInput
-            label="Nome da Clínica *"
-            value={nome}
-            onChangeText={setNome}
-            placeholder="Digite o nome da clínica"
-          />
+          <View style={styles.formContainer}>
+            <View style={styles.imageContainer}>
+              <CircularImage
+                uri={image.uri}
+                size={100}
+                onPress={showImageOptions}
+                showEditButton={true}
+                loading={image.isUploading}
+              />
+            </View>
 
-          <ModernInput
-            label="Endereço (opcional)"
-            value={endereco}
-            onChangeText={setEndereco}
-            placeholder="Endereço completo da clínica"
-            multiline
-            numberOfLines={3}
-          />
+            <ModernInput
+              label="Nome da Clínica *"
+              value={nome}
+              onChangeText={setNome}
+              placeholder="Digite o nome da clínica"
+              icon="business-outline"
+            />
 
-          <ModernInput
-            label="Telefone (opcional)"
-            value={fone}
-            onChangeText={setFone}
-            placeholder="(11) 99999-9999"
-            keyboardType="phone-pad"
-          />
+            <ModernInput
+              label="Endereço"
+              value={endereco}
+              onChangeText={setEndereco}
+              placeholder="Sua rua, número, bairro..."
+              icon="location-outline"
+            />
 
-          <ModernInput
-            label="Email *"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="email@clinica.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+            <ModernInput
+              label="Telefone"
+              value={fone}
+              onChangeText={setFone}
+              placeholder="(XX) XXXXX-XXXX"
+              keyboardType="phone-pad"
+              icon="call-outline"
+            />
 
-          <ModernInput
-            label="Senha *"
-            value={senha}
-            onChangeText={setSenha}
-            placeholder="Digite uma senha segura"
-            secureTextEntry
-          />
+            <ModernInput
+              label="Email *"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="seu@email.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              icon="mail-outline"
+            />
 
-          <ModernInput
-            label="URL da Imagem (opcional)"
-            value={imagem}
-            onChangeText={setImagem}
-            placeholder="https://exemplo.com/logo.jpg"
-            autoCapitalize="none"
-            helperText="Adicione uma imagem para representar sua clínica"
-          />
-        </View>
-      </ModernCard>
+            <ModernInput
+              label="Senha *"
+              value={senha}
+              onChangeText={setSenha}
+              placeholder="Crie uma senha segura"
+              secureTextEntry
+              icon="lock-closed-outline"
+            />
 
-      
-      <View style={styles.actionButtons}>
-        <ModernButton
-          title={loading ? "Cadastrando..." : "Cadastrar Clínica"}
-          onPress={handleRegister}
-          size="large"
-          fullWidth
-          disabled={loading}
-        />
-        
-        <ModernButton
-          title="Voltar"
-          onPress={() => navigation.goBack()}
-          variant="outline"
-          size="medium"
-          fullWidth
-        />
-      </View>
-    </ScrollView>
+            <ModernButton
+              title={loading ? "Cadastrando..." : "Finalizar Cadastro"}
+              onPress={handleRegister}
+              variant="primary"
+              size="large"
+              fullWidth
+              disabled={loading}
+              style={styles.registerButton}
+            />
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Já tem uma conta?</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Text style={styles.linkText}>Faça Login</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   contentContainer: {
     flexGrow: 1,
+    justifyContent: "center",
     padding: spacing.lg,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: spacing.xl,
-    marginTop: spacing.lg,
   },
   title: {
-    fontSize: fontSize.xxl,
+    fontSize: fontSize.xxxl,
     fontWeight: fontWeight.bold,
-    color: colors.text,
+    color: colors.primary,
+    textAlign: "center",
     marginBottom: spacing.xs,
   },
   subtitle: {
     fontSize: fontSize.md,
     color: colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
+    maxWidth: "80%",
   },
-  formCard: {
-    marginBottom: spacing.lg,
-  },
-  form: {
-    gap: spacing.sm,
+  formContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   imageContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: spacing.lg,
   },
-  imageLabel: {
+  registerButton: {
+    marginTop: spacing.md,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  footerText: {
     fontSize: fontSize.md,
-    fontWeight: fontWeight.medium,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  imageHelperText: {
-    fontSize: fontSize.sm,
     color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
   },
-  actionButtons: {
-    gap: spacing.md,
+  linkText: {
+    fontSize: fontSize.md,
+    color: colors.primary,
+    fontWeight: fontWeight.medium,
+    marginLeft: spacing.xs,
   },
 });
