@@ -73,8 +73,8 @@ export default function RegisterPatient({ navigation }: Props) {
 
   return (
     <LinearGradient
-      colors={[colors.primaryLight, colors.background, colors.background]}
-      locations={[0, 0.3, 1]}
+      colors={[colors.primary, colors.primaryDark, colors.primaryLight]}
+      locations={[0, 0.25, 0.65]}
       style={styles.container}
     >
       <KeyboardAvoidingView
@@ -185,13 +185,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.xxxl,
     fontWeight: fontWeight.bold,
-    color: colors.primary,
+    color: colors.onPrimary,
     textAlign: "center",
     marginBottom: spacing.xs,
   },
   subtitle: {
     fontSize: fontSize.md,
-    color: colors.textSecondary,
+    color: colors.onPrimary,
     textAlign: "center",
     maxWidth: "80%",
   },
