@@ -1,7 +1,7 @@
+import { Clinic, Patient, Specialization, Appointment, AppointmentWithDetails, AppointmentStatus, Document, DocumentWithDetails } from "../types";
 import axios from "axios";
-import { Clinic, Patient, Specialization } from "../types";
 
-export const BASE_URL = "http://192.168.100.155:4000"; //192.168.100.155
+export const BASE_URL = "http://192.168.100.36:4000";
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -118,6 +118,28 @@ export async function addSpecializationToClinic(clinicCode: number, specializati
   return res.data;
 }
 
+// Função para buscar pacientes de uma clínica específica
+export async function getClinicPatients(clinicCode: number) {
+  const res = await api.get(`/appointments/clinic/${clinicCode}`);
+  // Extrair pacientes únicos dos appointments
+  const appointments = res.data as AppointmentWithDetails[];
+  const uniquePatients = appointments.reduce((acc, appointment) => {
+    if (!acc.find(p => p.codigo === appointment.codigo_paciente)) {
+      acc.push({
+        codigo: appointment.codigo_paciente,
+        nome: appointment.paciente_nome || '',
+        email: appointment.paciente_email || '',
+        // Usar valores padrão para os campos obrigatórios que não estão disponíveis
+        datan: '',
+        fone: '',
+        ende: '',
+      } as Patient);
+    }
+    return acc;
+  }, [] as Patient[]);
+  return uniquePatients;
+}
+
 export async function removeSpecializationFromClinic(clinicCode: number, specializationName: string) {
   // First find the specialization by name
   const specializations = await getSpecializations();
@@ -128,6 +150,103 @@ export async function removeSpecializationFromClinic(clinicCode: number, special
   
   const res = await api.delete(`/clinics/${clinicCode}/specializations/${specialization.codigo}`);
   return res.data;
+}
+
+// ============ APPOINTMENTS API ============
+
+export async function createAppointment(appointmentData: Omit<Appointment, 'codigo' | 'criado_em' | 'atualizado_em'>) {
+  const res = await api.post("/appointments", appointmentData);
+  return res.data as Appointment;
+}
+
+export async function getAppointmentById(codigo: number) {
+  const res = await api.get(`/appointments/${codigo}`);
+  return res.data as AppointmentWithDetails;
+}
+
+export async function getAppointmentsByPatient(codigo_paciente: number) {
+  const res = await api.get(`/appointments/patient/${codigo_paciente}`);
+  return res.data as AppointmentWithDetails[];
+}
+
+export async function getAppointmentsByClinic(codigo_clinica: number) {
+  const res = await api.get(`/appointments/clinic/${codigo_clinica}`);
+  return res.data as AppointmentWithDetails[];
+}
+
+export async function updateAppointmentStatus(codigo: number, status: AppointmentStatus) {
+  const res = await api.patch(`/appointments/${codigo}/status`, { status });
+  return res.data as Appointment;
+}
+
+export async function updateAppointment(codigo: number, updates: Partial<Omit<Appointment, 'codigo' | 'criado_em' | 'atualizado_em'>>) {
+  const res = await api.put(`/appointments/${codigo}`, updates);
+  return res.data as Appointment;
+}
+
+export async function deleteAppointment(codigo: number) {
+  const res = await api.delete(`/appointments/${codigo}`);
+  return res.data;
+}
+
+export async function getAvailableSlots(codigo_clinica: number, data: string) {
+  const res = await api.get(`/appointments/slots/available`, {
+    params: { codigo_clinica, data }
+  });
+  return res.data as string[];
+}
+
+// ============ DOCUMENTS API ============
+
+export async function uploadDocument(fileUri: string, documentData: Omit<Document, 'codigo' | 'criado_em' | 'url_arquivo' | 'nome_arquivo' | 'tamanho_arquivo'>) {
+  // First upload the file
+  const imageUrl = await uploadImage(fileUri);
+  
+  // Get filename and size
+  const filename = fileUri.split('/').pop() || 'document';
+  
+  // Create document record
+  const res = await api.post("/documents", {
+    ...documentData,
+    url_arquivo: imageUrl,
+    nome_arquivo: filename,
+  });
+  return res.data as Document;
+}
+
+export async function createDocument(documentData: Omit<Document, 'codigo' | 'criado_em'>) {
+  const res = await api.post("/documents", documentData);
+  return res.data as Document;
+}
+
+export async function getDocumentById(codigo: number) {
+  const res = await api.get(`/documents/${codigo}`);
+  return res.data as DocumentWithDetails;
+}
+
+export async function getDocumentsByPatient(codigo_paciente: number) {
+  const res = await api.get(`/documents/patient/${codigo_paciente}`);
+  return res.data as DocumentWithDetails[];
+}
+
+export async function getDocumentsByClinic(codigo_clinica: number) {
+  const res = await api.get(`/documents/clinic/${codigo_clinica}`);
+  return res.data as DocumentWithDetails[];
+}
+
+export async function getDocumentsByPatientAndClinic(codigo_paciente: number, codigo_clinica: number) {
+  const res = await api.get(`/documents/patient/${codigo_paciente}/clinic/${codigo_clinica}`);
+  return res.data as DocumentWithDetails[];
+}
+
+export async function deleteDocument(codigo: number) {
+  const res = await api.delete(`/documents/${codigo}`);
+  return res.data;
+}
+
+export async function updateDocument(codigo: number, updates: Partial<Omit<Document, 'codigo' | 'criado_em'>>) {
+  const res = await api.put(`/documents/${codigo}`, updates);
+  return res.data as Document;
 }
 
 export default api;

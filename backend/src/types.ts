@@ -28,6 +28,43 @@ export interface ClinicSpecialization {
   codigo_especializacao: number;
 }
 
+export interface Appointment {
+  codigo: number;
+  codigo_paciente: number;
+  codigo_clinica: number;
+  codigo_especializacao: number;
+  data_hora: string;
+  status: 'agendada' | 'confirmada' | 'cancelada' | 'concluida';
+  observacoes?: string;
+  criado_em?: string;
+  atualizado_em?: string;
+}
+
+export interface AppointmentWithDetails extends Appointment {
+  paciente_nome?: string;
+  paciente_email?: string;
+  clinica_nome?: string;
+  clinica_endereco?: string;
+  especializacao_nome?: string;
+}
+
+export interface Document {
+  codigo: number;
+  codigo_paciente: number;
+  codigo_clinica?: number;
+  nome_arquivo: string;
+  url_arquivo: string;
+  tipo_documento: 'exame' | 'receita' | 'laudo' | 'atestado' | 'pedido_exame' | 'resultado_exame' | 'outro';
+  descricao?: string;
+  tamanho_arquivo?: number;
+  enviado_por: 'paciente' | 'clinica';
+  criado_em?: string;
+}
+
+export interface DocumentWithDetails extends Document {
+  paciente_nome?: string;
+  clinica_nome?: string;
+}
 
 export interface Database {
   public: {
@@ -51,6 +88,16 @@ export interface Database {
         Row: ClinicSpecialization;
         Insert: ClinicSpecialization;
         Update: Partial<ClinicSpecialization>;
+      };
+      consultas: {
+        Row: Appointment;
+        Insert: Omit<Appointment, 'codigo' | 'criado_em' | 'atualizado_em'>;
+        Update: Partial<Omit<Appointment, 'codigo' | 'criado_em' | 'atualizado_em'>>;
+      };
+      documentos: {
+        Row: Document;
+        Insert: Omit<Document, 'codigo' | 'criado_em'>;
+        Update: Partial<Omit<Document, 'codigo' | 'criado_em'>>;
       };
     };
     Functions: Record<string, unknown>;

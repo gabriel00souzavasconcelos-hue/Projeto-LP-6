@@ -9,6 +9,8 @@ import patientsRouter from './routes/patients';
 import clinicsRouter from './routes/clinics';
 import specsRouter from './routes/specializations';
 import authRouter from './routes/auth';
+import appointmentsRouter from './routes/appointments';
+import documentsRouter from './routes/documents';
 
 const app = express();
 const port = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -55,6 +57,8 @@ app.use('/patients', patientsRouter);
 app.use('/clinics', clinicsRouter);
 app.use('/specializations', specsRouter);
 app.use('/auth', authRouter);
+app.use('/appointments', appointmentsRouter);
+app.use('/documents', documentsRouter);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

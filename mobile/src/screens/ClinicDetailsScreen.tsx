@@ -8,20 +8,23 @@ import {
   Image,
 } from 'react-native';
 import ModernCard from '../components/ModernCard';
+import ModernButton from '../components/ModernButton';
 import { getClinicById } from '../api/client';
 import { Clinic } from '../types';
 import { colors, spacing, fontSize, borderRadius } from '../styles/theme';
 
 type Props = {
+  navigation: any;
   route: {
     params: {
       clinicId: number;
+      patient?: any;
     };
   };
 };
 
-export default function ClinicDetailsScreen({ route }: Props) {
-  const { clinicId } = route.params;
+export default function ClinicDetailsScreen({ route, navigation }: Props) {
+  const { clinicId, patient } = route.params;
   const [clinic, setClinic] = useState<Clinic | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -89,6 +92,16 @@ export default function ClinicDetailsScreen({ route }: Props) {
                 </View>
               ))}
             </View>
+          </View>
+        )}
+
+        {patient && (
+          <View style={styles.actionSection}>
+            <ModernButton
+              title="Agendar Consulta"
+              onPress={() => navigation.navigate('BookAppointment', { clinic, patient })}
+              fullWidth
+            />
           </View>
         )}
       </ModernCard>
@@ -173,5 +186,11 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 12,
     fontWeight: '600',
+  },
+  actionSection: {
+    marginTop: spacing.md,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
 });

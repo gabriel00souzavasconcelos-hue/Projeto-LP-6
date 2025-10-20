@@ -96,11 +96,9 @@ export default function ClinicMenu({ route, navigation }: Props) {
               </Text>
             </View>
             <ModernButton
-              title="Em breve"
-              onPress={() => {}}
-              variant="ghost"
+              title="Gerenciar"
+              onPress={() => navigation.navigate("ClinicPatients", { clinic })}
               size="small"
-              disabled
             />
           </View>
         </ModernCard>
@@ -114,11 +112,9 @@ export default function ClinicMenu({ route, navigation }: Props) {
               </Text>
             </View>
             <ModernButton
-              title="Em breve"
-              onPress={() => {}}
-              variant="ghost"
+              title="Ver Agenda"
+              onPress={() => navigation.navigate("ClinicAgenda", { clinic })}
               size="small"
-              disabled
             />
           </View>
         </ModernCard>
@@ -132,11 +128,25 @@ export default function ClinicMenu({ route, navigation }: Props) {
               </Text>
             </View>
             <ModernButton
-              title="Em breve"
-              onPress={() => {}}
-              variant="ghost"
+              title="Ver Relatórios"
+              onPress={() => navigation.navigate("ClinicReports", { clinic })}
               size="small"
-              disabled
+            />
+          </View>
+        </ModernCard>
+
+        <ModernCard variant="outlined" style={styles.actionCard}>
+          <View style={styles.actionContent}>
+            <View style={styles.actionInfo}>
+              <Text style={styles.actionTitle}>📄 Documentos</Text>
+              <Text style={styles.actionDescription}>
+                Gerencie documentos médicos dos pacientes
+              </Text>
+            </View>
+            <ModernButton
+              title="Gerenciar"
+              onPress={() => navigation.navigate("ClinicDocuments", { clinic })}
+              size="small"
             />
           </View>
         </ModernCard>

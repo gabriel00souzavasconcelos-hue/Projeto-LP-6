@@ -53,7 +53,7 @@ export default function PatientMenu({ route, navigation }: Props) {
               <Text style={styles.actionTitle}>🏥 Buscar Clínicas</Text>
               <Text style={styles.actionDescription}>Encontre clínicas especializadas próximas a você</Text>
             </View>
-            <ModernButton title="Ver Clínicas" onPress={() => navigation.navigate("ClinicList")} size="small" />
+            <ModernButton title="Ver Clínicas" onPress={() => navigation.navigate("ClinicList", { patient })} size="small" />
           </View>
         </ModernCard>
 
@@ -63,7 +63,7 @@ export default function PatientMenu({ route, navigation }: Props) {
               <Text style={styles.actionTitle}>👨‍⚕️ Consultas</Text>
               <Text style={styles.actionDescription}>Gerencie suas consultas e histórico médico</Text>
             </View>
-            <ModernButton title="Em breve" onPress={() => {}} variant="ghost" size="small" disabled />
+            <ModernButton title="Ver Consultas" onPress={() => navigation.navigate("Appointments", { patient })} size="small" />
           </View>
         </ModernCard>
 
@@ -73,7 +73,17 @@ export default function PatientMenu({ route, navigation }: Props) {
               <Text style={styles.actionTitle}>🔔 Notificações</Text>
               <Text style={styles.actionDescription}>Receba lembretes sobre consultas e exames</Text>
             </View>
-            <ModernButton title="Em breve" onPress={() => {}} variant="ghost" size="small" disabled />
+            <ModernButton title="Ver Lembretes" onPress={() => navigation.navigate("Notifications", { patient })} size="small" />
+          </View>
+        </ModernCard>
+
+        <ModernCard variant="outlined" style={styles.actionCard}>
+          <View style={styles.actionContent}>
+            <View style={styles.actionInfo}>
+              <Text style={styles.actionTitle}>📄 Documentos Médicos</Text>
+              <Text style={styles.actionDescription}>Gerencie seus exames, receitas e laudos</Text>
+            </View>
+            <ModernButton title="Ver Documentos" onPress={() => navigation.navigate("PatientDocuments", { patient })} size="small" />
           </View>
         </ModernCard>
       </View>

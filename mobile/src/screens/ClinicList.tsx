@@ -32,9 +32,11 @@ const { width } = Dimensions.get('window');
 
 type Props = {
   navigation: any;
+  route?: any;
 };
 
-export default function ClinicList({ navigation }: Props) {
+export default function ClinicList({ navigation, route }: Props) {
+  const patient = route?.params?.patient;
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -88,7 +90,7 @@ export default function ClinicList({ navigation }: Props) {
   const renderClinicItem = ({ item }: { item: Clinic }) => (
     <ClinicCard
       clinic={item}
-      onPress={() => navigation.navigate("ClinicDetails", { clinicId: item.codigo })}
+      onPress={() => navigation.navigate("ClinicDetails", { clinicId: item.codigo, patient })}
     />
   );
 
