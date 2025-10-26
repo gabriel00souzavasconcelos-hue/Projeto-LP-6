@@ -1,3 +1,20 @@
+  // Valida se a data está no formato DD/MM/AAAA, é uma data real e não está no passado
+  const isValidDate = (date: string) => {
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(date)) return false;
+    const [day, month, year] = date.split('/').map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    if (
+      dateObj.getFullYear() !== year ||
+      dateObj.getMonth() !== month - 1 ||
+      dateObj.getDate() !== day
+    ) {
+      return false;
+    }
+    // Não permite datas no passado
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    return dateObj >= today;
+  };
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
@@ -36,18 +53,49 @@ export default function BookAppointmentScreen({ route, navigation }: Props) {
     }
   };
 
-  const handleDateChange = async (date: string) => {
-    setSelectedDate(date);
+  // Converte DD/MM/AAAA para AAAA-MM-DD
+  // Máscara para DD/MM/AAAA
+  const formatDateInput = (text: string) => {
+    const cleaned = text.replace(/\D/g, '');
+    let formatted = cleaned;
+    if (cleaned.length > 2 && cleaned.length <= 4) {
+      formatted = cleaned.slice(0,2) + '/' + cleaned.slice(2);
+    } else if (cleaned.length > 4) {
+      formatted = cleaned.slice(0,2) + '/' + cleaned.slice(2,4) + '/' + cleaned.slice(4,8);
+    }
+    return formatted;
+  };
+
+  // Converte DD/MM/AAAA para AAAA-MM-DD
+  const convertToApiDate = (date: string) => {
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(date)) {
+      const [day, month, year] = date.split('/');
+      return `${year}-${month}-${day}`;
+    }
+    return '';
+  };
+
+  const handleDateChange = async (text: string) => {
+    const formatted = formatDateInput(text);
+    setSelectedDate(formatted);
     setSelectedSlot("");
-    
-    if (date && clinic.codigo) {
+
+    if (!isValidDate(formatted)) {
+      setAvailableSlots([]);
+      return;
+    }
+
+    const apiDate = convertToApiDate(formatted);
+    if (apiDate && clinic.codigo) {
       try {
-        const slots = await getAvailableSlots(clinic.codigo, date);
+        const slots = await getAvailableSlots(clinic.codigo, apiDate);
         setAvailableSlots(slots);
       } catch (error) {
         console.error("Erro ao carregar horários:", error);
         Alert.alert("Erro", "Não foi possível carregar os horários disponíveis");
       }
+    } else {
+      setAvailableSlots([]);
     }
   };
 
@@ -111,35 +159,44 @@ export default function BookAppointmentScreen({ route, navigation }: Props) {
       <View style={styles.formSection}>
         <Text style={styles.sectionTitle}>Especialização</Text>
         <View style={styles.specializationsContainer}>
-          {specializations.map((spec) => (
-            <TouchableOpacity
-              key={spec.codigo}
-              style={[
-                styles.specializationChip,
-                selectedSpecialization === spec.codigo && styles.specializationChipSelected
-              ]}
-              onPress={() => setSelectedSpecialization(spec.codigo!)}
-            >
-              <Text style={[
-                styles.specializationText,
-                selectedSpecialization === spec.codigo && styles.specializationTextSelected
-              ]}>
-                {spec.nome}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {specializations.map((spec) => {
+            const isSelected = selectedSpecialization === spec.codigo;
+            return (
+              <TouchableOpacity
+                key={spec.codigo}
+                style={[
+                  styles.specializationChip,
+                  isSelected && styles.specializationChipSelected,
+                  isSelected && { borderColor: colors.primary, borderWidth: 2, shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3 }
+                ]}
+                onPress={() => setSelectedSpecialization(spec.codigo!)}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.specializationText,
+                  isSelected && styles.specializationTextSelected,
+                  isSelected && { color: colors.surface, fontWeight: fontWeight.bold }
+                ]}>
+                  {spec.nome}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
       <View style={styles.formSection}>
         <Text style={styles.sectionTitle}>Data da Consulta</Text>
         <ModernInput
-          placeholder="Selecione a data"
+          placeholder="DD/MM/AAAA"
           value={selectedDate}
           onChangeText={handleDateChange}
           icon="calendar-outline"
+          keyboardType="numeric"
+          maxLength={10}
+          error={selectedDate.length === 10 && !isValidDate(selectedDate) ? "Data inválida ou no passado" : undefined}
         />
-        <Text style={styles.helperText}>Formato: AAAA-MM-DD (Ex: 2025-10-25)</Text>
+        <Text style={styles.helperText}>Digite a data no formato DD/MM/AAAA (Ex: 25/10/2025)</Text>
       </View>
 
       {availableSlots.length > 0 && (

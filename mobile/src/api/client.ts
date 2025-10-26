@@ -1,7 +1,7 @@
 import { Clinic, Patient, Specialization, Appointment, AppointmentWithDetails, AppointmentStatus, Document, DocumentWithDetails } from "../types";
 import axios from "axios";
 
-export const BASE_URL = "http://192.168.100.36:4000";
+export const BASE_URL = "http://192.168.1.5:4000";
 
 const api = axios.create({
   baseURL: BASE_URL,
