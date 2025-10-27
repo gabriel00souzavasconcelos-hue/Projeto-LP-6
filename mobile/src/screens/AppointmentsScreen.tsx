@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Alert, TouchableOpacity } from "react-native";
-import { Ionicons } from '@expo/vector-icons';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  Alert,
+  TouchableOpacity,
+  StatusBar,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { colors, spacing, fontSize, fontWeight, borderRadius } from "../styles/theme";
 import ModernCard from "../components/ModernCard";
-import ModernButton from "../components/ModernButton";
 import { getAppointmentsByPatient, updateAppointmentStatus } from "../api/client";
 import { AppointmentWithDetails } from "../types";
 
@@ -17,6 +26,7 @@ export default function AppointmentsScreen({ route, navigation }: Props) {
   const [appointments, setAppointments] = useState<AppointmentWithDetails[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
 
   useEffect(() => {
     if (patient?.codigo) {
@@ -25,8 +35,8 @@ export default function AppointmentsScreen({ route, navigation }: Props) {
   }, [patient?.codigo]);
 
   const loadAppointments = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const data = await getAppointmentsByPatient(patient.codigo);
       setAppointments(data);
     } catch (error: any) {
@@ -36,11 +46,6 @@ export default function AppointmentsScreen({ route, navigation }: Props) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadAppointments();
   };
 
   const handleCancelAppointment = (codigo: number) => {
@@ -54,156 +59,139 @@ export default function AppointmentsScreen({ route, navigation }: Props) {
           style: "destructive",
           onPress: async () => {
             try {
-              await updateAppointmentStatus(codigo, 'cancelada');
+              await updateAppointmentStatus(codigo, "cancelada");
               Alert.alert("Sucesso", "Consulta cancelada com sucesso");
               loadAppointments();
             } catch (error) {
               Alert.alert("Erro", "Não foi possível cancelar a consulta");
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusDetails = (status: string) => {
     switch (status) {
-      case 'agendada': return colors.warning;
-      case 'confirmada': return colors.success;
-      case 'cancelada': return colors.error;
-      case 'concluida': return colors.textSecondary;
-      default: return colors.textSecondary;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'agendada': return 'time-outline';
-      case 'confirmada': return 'checkmark-circle-outline';
-      case 'cancelada': return 'close-circle-outline';
-      case 'concluida': return 'checkmark-done-outline';
-      default: return 'help-outline';
+      case "agendada": return { color: colors.warning, icon: "time-outline", label: "Agendada" };
+      case "confirmada": return { color: colors.success, icon: "checkmark-circle-outline", label: "Confirmada" };
+      case "cancelada": return { color: colors.error, icon: "close-circle-outline", label: "Cancelada" };
+      case "concluida": return { color: colors.textSecondary, icon: "checkmark-done-outline", label: "Concluída" };
+      default: return { color: colors.textSecondary, icon: "help-outline", label: status };
     }
   };
 
   const formatDateTime = (dateTime: string) => {
     const date = new Date(dateTime);
     return {
-      date: date.toLocaleDateString('pt-BR'),
-      time: date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      date: date.toLocaleDateString("pt-BR"),
+      time: date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     };
   };
 
   const upcomingAppointments = appointments.filter(
-    apt => apt.status !== 'cancelada' && apt.status !== 'concluida' && new Date(apt.data_hora) >= new Date()
+    (apt) =>
+      apt.status !== "cancelada" &&
+      apt.status !== "concluida" &&
+      new Date(apt.data_hora) >= new Date()
   );
 
   const pastAppointments = appointments.filter(
-    apt => apt.status === 'concluida' || apt.status === 'cancelada' || new Date(apt.data_hora) < new Date()
+    (apt) =>
+      apt.status === "concluida" ||
+      apt.status === "cancelada" ||
+      new Date(apt.data_hora) < new Date()
   );
 
-  return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Minhas Consultas</Text>
-        <ModernButton
-          title="Agendar Nova"
-          onPress={() => navigation.navigate("ClinicList")}
-          size="small"
-        />
-      </View>
+  const renderAppointment = ({ item }: { item: AppointmentWithDetails }) => {
+    const { date, time } = formatDateTime(item.data_hora);
+    const status = getStatusDetails(item.status);
 
-      {/* Próximas Consultas */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Próximas Consultas ({upcomingAppointments.length})</Text>
-        {upcomingAppointments.length === 0 ? (
-          <ModernCard variant="outlined" style={styles.emptyCard}>
-            <Ionicons name="calendar-outline" size={48} color={colors.textSecondary} />
-            <Text style={styles.emptyText}>Nenhuma consulta agendada</Text>
-            <Text style={styles.emptySubtext}>Encontre uma clínica e agende sua consulta</Text>
-          </ModernCard>
-        ) : (
-          upcomingAppointments.map((apt) => {
-            const { date, time } = formatDateTime(apt.data_hora);
-            return (
-              <ModernCard key={apt.codigo} variant="elevated" style={styles.appointmentCard}>
-                <View style={styles.appointmentHeader}>
-                  <View style={styles.appointmentDate}>
-                    <Ionicons name="calendar" size={20} color={colors.primary} />
-                    <Text style={styles.dateText}>{date}</Text>
-                    <Text style={styles.timeText}>{time}</Text>
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(apt.status) + '20' }]}>
-                    <Ionicons name={getStatusIcon(apt.status) as any} size={16} color={getStatusColor(apt.status)} />
-                    <Text style={[styles.statusText, { color: getStatusColor(apt.status) }]}>
-                      {apt.status}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.appointmentBody}>
-                  <Text style={styles.clinicName}>{apt.clinicas?.nome || apt.clinica_nome}</Text>
-                  <Text style={styles.specializationText}>
-                    {apt.especializacoes?.nome || apt.especializacao_nome}
-                  </Text>
-                  {apt.clinicas?.endereco && (
-                    <Text style={styles.addressText}>📍 {apt.clinicas.endereco}</Text>
-                  )}
-                  {apt.observacoes && (
-                    <Text style={styles.observationsText}>💬 {apt.observacoes}</Text>
-                  )}
-                </View>
-
-                {apt.status === 'agendada' && (
-                  <View style={styles.appointmentActions}>
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={() => handleCancelAppointment(apt.codigo!)}
-                    >
-                      <Ionicons name="close-circle-outline" size={20} color={colors.error} />
-                      <Text style={styles.cancelButtonText}>Cancelar</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </ModernCard>
-            );
-          })
-        )}
-      </View>
-
-      {/* Histórico */}
-      {pastAppointments.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Histórico ({pastAppointments.length})</Text>
-          {pastAppointments.map((apt) => {
-            const { date, time } = formatDateTime(apt.data_hora);
-            return (
-              <ModernCard key={apt.codigo} variant="outlined" style={styles.pastAppointmentCard}>
-                <View style={styles.appointmentHeader}>
-                  <View style={styles.appointmentDate}>
-                    <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-                    <Text style={styles.pastDateText}>{date} - {time}</Text>
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(apt.status) + '20' }]}>
-                    <Ionicons name={getStatusIcon(apt.status) as any} size={14} color={getStatusColor(apt.status)} />
-                    <Text style={[styles.statusTextSmall, { color: getStatusColor(apt.status) }]}>
-                      {apt.status}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.pastClinicName}>{apt.clinicas?.nome || apt.clinica_nome}</Text>
-                <Text style={styles.pastSpecialization}>
-                  {apt.especializacoes?.nome || apt.especializacao_nome}
-                </Text>
-              </ModernCard>
-            );
-          })}
+    return (
+      <ModernCard variant="elevated" style={styles.appointmentCard}>
+        <View style={styles.appointmentHeader}>
+          <View style={styles.appointmentDate}>
+            <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+            <Text style={styles.dateText}>{date} às {time}</Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: status.color + "20" }]}>
+            <Ionicons name={status.icon as any} size={16} color={status.color} />
+            <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
+          </View>
         </View>
-      )}
-    </ScrollView>
+
+        <View style={styles.appointmentBody}>
+          <Text style={styles.clinicName}>{item.clinicas?.nome || item.clinica_nome}</Text>
+          <Text style={styles.specializationText}>
+            {item.especializacoes?.nome || item.especializacao_nome}
+          </Text>
+          {item.clinicas?.endereco && (
+            <Text style={styles.addressText}>📍 {item.clinicas.endereco}</Text>
+          )}
+        </View>
+
+        {item.status === "agendada" && (
+          <View style={styles.appointmentActions}>
+            <TouchableOpacity style={styles.cancelButton} onPress={() => handleCancelAppointment(item.codigo!)}>
+              <Ionicons name="close-circle-outline" size={20} color={colors.error} />
+              <Text style={styles.cancelButtonText}>Cancelar Agendamento</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ModernCard>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <LinearGradient colors={[colors.primary, colors.primaryDark]} style={styles.header}>
+        <Text style={styles.headerTitle}>Minhas Consultas</Text>
+        <Text style={styles.headerSubtitle}>Gerencie seus agendamentos</Text>
+      </LinearGradient>
+
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === "upcoming" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("upcoming")}
+        >
+          <Text style={[styles.tabText, activeTab === "upcoming" && styles.tabTextActive]}>Próximas</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabButton, activeTab === "past" && styles.tabButtonActive]}
+          onPress={() => setActiveTab("past")}
+        >
+          <Text style={[styles.tabText, activeTab === "past" && styles.tabTextActive]}>Histórico</Text>
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        data={activeTab === "upcoming" ? upcomingAppointments : pastAppointments}
+        renderItem={renderAppointment}
+        keyExtractor={(item) => item.codigo!.toString()}
+        contentContainerStyle={styles.listContainer}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={loadAppointments} tintColor={colors.primary} />}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="calendar-outline" size={60} color={colors.textMuted} />
+            <Text style={styles.emptyText}>
+              {activeTab === "upcoming"
+                ? "Nenhuma consulta agendada"
+                : "Nenhuma consulta no histórico"}
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {activeTab === "upcoming"
+                ? "Use o botão (+) para agendar uma nova consulta"
+                : "Suas consultas passadas aparecerão aqui"}
+            </Text>
+          </View>
+        )}
+      />
+
+      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate("ClinicList")}>
+        <Ionicons name="add" size={32} color={colors.onPrimary} />
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -213,146 +201,157 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     padding: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.xxl,
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
   },
-  title: {
-    fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold as any,
-    color: colors.text,
+  headerTitle: {
+    fontSize: fontSize.xxxl,
+    fontWeight: fontWeight.bold,
+    color: colors.onPrimary,
+    textAlign: "center",
   },
-  section: {
+  headerSubtitle: {
+    fontSize: fontSize.md,
+    color: colors.onPrimary,
+    textAlign: "center",
+    marginTop: spacing.xs,
+    opacity: 0.9,
+  },
+  tabContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tabButton: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+  },
+  tabButtonActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primary,
+  },
+  tabText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.textSecondary,
+  },
+  tabTextActive: {
+    color: colors.primary,
+    fontWeight: fontWeight.semibold,
+  },
+  listContainer: {
+    flexGrow: 1,
     padding: spacing.lg,
-    paddingTop: 0,
   },
-  sectionTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold as any,
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  emptyCard: {
-    alignItems: 'center',
-    padding: spacing.xl,
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: spacing.xxl * 2,
   },
   emptyText: {
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.medium as any,
+    fontWeight: fontWeight.semibold,
     color: colors.textSecondary,
     marginTop: spacing.md,
   },
   emptySubtext: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    textAlign: 'center',
+    fontSize: fontSize.md,
+    color: colors.textMuted,
+    textAlign: "center",
+    marginTop: spacing.sm,
+    maxWidth: "80%",
   },
   appointmentCard: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+    padding: spacing.md,
   },
   appointmentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: spacing.md,
   },
   appointmentDate: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
   dateText: {
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold as any,
+    fontWeight: fontWeight.semibold,
     color: colors.text,
   },
-  timeText: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.bold as any,
-    color: colors.primary,
-  },
   statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.md,
+    paddingVertical: 4,
+    borderRadius: borderRadius.round,
   },
   statusText: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium as any,
-    textTransform: 'capitalize',
-  },
-  statusTextSmall: {
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium as any,
-    textTransform: 'capitalize',
+    fontWeight: fontWeight.bold,
+    textTransform: "uppercase",
   },
   appointmentBody: {
-    marginBottom: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   clinicName: {
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold as any,
+    fontWeight: fontWeight.bold,
     color: colors.text,
     marginBottom: spacing.xs,
   },
   specializationText: {
     fontSize: fontSize.md,
     color: colors.primary,
-    marginBottom: spacing.xs,
+    fontWeight: fontWeight.medium,
+    marginBottom: spacing.sm,
   },
   addressText: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  observationsText: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    fontStyle: 'italic',
   },
   appointmentActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: spacing.sm,
-    paddingTop: spacing.sm,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    alignItems: "flex-end",
   },
   cancelButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
   },
   cancelButtonText: {
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium as any,
+    fontWeight: fontWeight.medium,
     color: colors.error,
   },
-  pastAppointmentCard: {
-    marginBottom: spacing.sm,
-    opacity: 0.8,
-  },
-  pastDateText: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-  pastClinicName: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold as any,
-    color: colors.text,
-    marginTop: spacing.xs,
-  },
-  pastSpecialization: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
+  fab: {
+    position: "absolute",
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 8,
+    shadowColor: colors.shadow,
+    shadowRadius: 6,
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
   },
 });

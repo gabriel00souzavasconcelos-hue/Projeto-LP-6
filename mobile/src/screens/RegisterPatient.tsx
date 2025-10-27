@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import ModernInput from "../components/ModernInput";
 import ModernButton from "../components/ModernButton";
 import {
@@ -72,11 +72,7 @@ export default function RegisterPatient({ navigation }: Props) {
   }
 
   return (
-    <LinearGradient
-      colors={[colors.primary, colors.primaryDark, colors.primaryLight]}
-      locations={[0, 0.25, 0.65]}
-      style={styles.container}
-    >
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -86,6 +82,12 @@ export default function RegisterPatient({ navigation }: Props) {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
+            <Ionicons
+              name="person-add-outline"
+              size={60}
+              color={colors.primary}
+              style={styles.icon}
+            />
             <Text style={styles.title}>Crie sua Conta</Text>
             <Text style={styles.subtitle}>
               Preencha seus dados para se cadastrar como paciente
@@ -165,13 +167,14 @@ export default function RegisterPatient({ navigation }: Props) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   contentContainer: {
     flexGrow: 1,
@@ -182,16 +185,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: spacing.xl,
   },
+  icon: {
+    marginBottom: spacing.lg,
+  },
   title: {
     fontSize: fontSize.xxxl,
     fontWeight: fontWeight.bold,
-    color: colors.onPrimary,
+    color: colors.primary,
     textAlign: "center",
     marginBottom: spacing.xs,
   },
   subtitle: {
     fontSize: fontSize.md,
-    color: colors.onPrimary,
+    color: colors.textSecondary,
     textAlign: "center",
     maxWidth: "80%",
   },

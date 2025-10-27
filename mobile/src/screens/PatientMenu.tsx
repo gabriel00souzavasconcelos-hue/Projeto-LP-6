@@ -1,32 +1,87 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, StatusBar } from "react-native";
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  StatusBar,
+  TouchableOpacity,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "../navigation";
 import ModernButton from "../components/ModernButton";
 import ModernCard from "../components/ModernCard";
-import { colors, spacing, fontSize, fontWeight, borderRadius, shadows } from "../styles/theme";
+import {
+  colors,
+  spacing,
+  fontSize,
+  fontWeight,
+  borderRadius,
+  shadows,
+} from "../styles/theme";
 
 type Props = {
   navigation: any;
   route: any;
 };
 
+const menuActions = [
+  {
+    id: "clinics",
+    label: "Buscar Clínicas",
+    icon: "search-outline" as const,
+    screen: "ClinicList",
+    color: colors.primary,
+  },
+  {
+    id: "appointments",
+    label: "Consultas",
+    icon: "calendar-outline" as const,
+    screen: "Appointments",
+    color: colors.success,
+  },
+  {
+    id: "notifications",
+    label: "Notificações",
+    icon: "notifications-outline" as const,
+    screen: "Notifications",
+    color: colors.warning,
+  },
+  {
+    id: "documents",
+    label: "Documentos",
+    icon: "folder-open-outline" as const,
+    screen: "PatientDocuments",
+    color: colors.error,
+  },
+];
+
 export default function PatientMenu({ route, navigation }: Props) {
   const patient = route.params?.patient;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
       <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
 
-      <LinearGradient colors={[colors.primary, colors.primaryDark]} style={styles.header} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+      <LinearGradient
+        colors={[colors.primary, colors.primaryDark]}
+        style={styles.header}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
         <View style={styles.headerTop}>
           <View style={styles.avatarPlaceholder}>
             <Ionicons name="person-circle" size={56} color={colors.surface} />
           </View>
           <View style={styles.headerText}>
             <Text style={styles.welcomeText}>Olá,</Text>
-            <Text style={styles.patientName}>{patient?.nome || "Paciente"}</Text>
+            <Text style={styles.patientName}>
+              {patient?.nome || "Paciente"}
+            </Text>
           </View>
         </View>
         <Text style={styles.subtitle}>O que você gostaria de fazer hoje?</Text>
@@ -36,60 +91,56 @@ export default function PatientMenu({ route, navigation }: Props) {
         <View style={styles.patientInfoRow}>
           <View style={styles.patientInfoLeft}>
             <Text style={styles.cardTitle}>Suas Informações</Text>
-            {patient?.email && <Text style={styles.infoText}>📧 {patient.email}</Text>}
-            {patient?.fone && <Text style={styles.infoText}>📱 {patient.fone}</Text>}
-            {patient?.ende && <Text style={styles.infoText}>📍 {patient.ende}</Text>}
+            {patient?.email && (
+              <Text style={styles.infoText}>📧 {patient.email}</Text>
+            )}
+            {patient?.fone && (
+              <Text style={styles.infoText}>📱 {patient.fone}</Text>
+            )}
+            {patient?.ende && (
+              <Text style={styles.infoText}>📍 {patient.ende}</Text>
+            )}
           </View>
-          <ModernButton title="Editar" onPress={() => navigation.navigate('PatientEdit', { patient })} variant="outline" size="small" />
+          <ModernButton
+            title="Editar"
+            onPress={() => navigation.navigate("PatientEdit", { patient })}
+            variant="outline"
+            size="small"
+          />
         </View>
       </ModernCard>
 
       <View style={styles.actionsContainer}>
         <Text style={styles.sectionTitle}>Ações Disponíveis</Text>
-
-        <ModernCard variant="outlined" style={styles.actionCard}>
-          <View style={styles.actionContent}>
-            <View style={styles.actionInfo}>
-              <Text style={styles.actionTitle}>🏥 Buscar Clínicas</Text>
-              <Text style={styles.actionDescription}>Encontre clínicas especializadas próximas a você</Text>
-            </View>
-            <ModernButton title="Ver Clínicas" onPress={() => navigation.navigate("ClinicList", { patient })} size="small" />
-          </View>
-        </ModernCard>
-
-        <ModernCard variant="outlined" style={styles.actionCard}>
-          <View style={styles.actionContent}>
-            <View style={styles.actionInfo}>
-              <Text style={styles.actionTitle}>👨‍⚕️ Consultas</Text>
-              <Text style={styles.actionDescription}>Gerencie suas consultas e histórico médico</Text>
-            </View>
-            <ModernButton title="Ver Consultas" onPress={() => navigation.navigate("Appointments", { patient })} size="small" />
-          </View>
-        </ModernCard>
-
-        <ModernCard variant="outlined" style={styles.actionCard}>
-          <View style={styles.actionContent}>
-            <View style={styles.actionInfo}>
-              <Text style={styles.actionTitle}>🔔 Notificações</Text>
-              <Text style={styles.actionDescription}>Receba lembretes sobre consultas e exames</Text>
-            </View>
-            <ModernButton title="Ver Lembretes" onPress={() => navigation.navigate("Notifications", { patient })} size="small" />
-          </View>
-        </ModernCard>
-
-        <ModernCard variant="outlined" style={styles.actionCard}>
-          <View style={styles.actionContent}>
-            <View style={styles.actionInfo}>
-              <Text style={styles.actionTitle}>📄 Documentos Médicos</Text>
-              <Text style={styles.actionDescription}>Gerencie seus exames, receitas e laudos</Text>
-            </View>
-            <ModernButton title="Ver Documentos" onPress={() => navigation.navigate("PatientDocuments", { patient })} size="small" />
-          </View>
-        </ModernCard>
+        <View style={styles.actionsGrid}>
+          {menuActions.map((action) => (
+            <TouchableOpacity
+              key={action.id}
+              style={styles.actionCard}
+              onPress={() => navigation.navigate(action.screen, { patient })}
+            >
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  { backgroundColor: action.color + "20" },
+                ]}
+              >
+                <Ionicons name={action.icon} size={32} color={action.color} />
+              </View>
+              <Text style={styles.actionLabel}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       <View style={styles.logoutContainer}>
-        <ModernButton title="Sair da Conta" onPress={() => navigation.replace("Login")} variant="outline" size="medium" fullWidth />
+        <ModernButton
+          title="Sair da Conta"
+          onPress={() => navigation.replace("Login")}
+          variant="outline"
+          size="medium"
+          fullWidth
+        />
       </View>
     </ScrollView>
   );
@@ -101,28 +152,30 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   contentContainer: {
-    flexGrow: 1,
-    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   header: {
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
     borderBottomLeftRadius: borderRadius.xl,
     borderBottomRightRadius: borderRadius.xl,
+    marginBottom: -spacing.lg, // Negative margin to pull cards up
   },
   headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: spacing.md,
   },
   avatarPlaceholder: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: spacing.md,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.3)",
   },
   headerText: {
     flex: 1,
@@ -130,80 +183,88 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: fontSize.lg,
     color: colors.onPrimary,
-    marginBottom: spacing.xs,
+    opacity: 0.9,
   },
   patientName: {
     fontSize: fontSize.xxl,
     fontWeight: fontWeight.bold,
     color: colors.onPrimary,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
+    textAlign: "left",
   },
   subtitle: {
     fontSize: fontSize.md,
     color: colors.onPrimary,
-    textAlign: 'center',
+    textAlign: "center",
+    opacity: 0.9,
+    marginTop: spacing.lg,
   },
   patientCard: {
+    marginHorizontal: spacing.lg,
     marginBottom: spacing.lg,
-    ...shadows.small,
   },
   patientInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
   },
   patientInfoLeft: {
     flex: 1,
     marginRight: spacing.md,
   },
-  patientInfo: {
-    gap: spacing.sm,
-  },
   cardTitle: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   infoText: {
     fontSize: fontSize.md,
     color: colors.textSecondary,
+    marginBottom: spacing.xs,
   },
   actionsContainer: {
+    paddingHorizontal: spacing.lg,
     marginBottom: spacing.xl,
   },
   sectionTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
     color: colors.text,
     marginBottom: spacing.md,
   },
+  actionsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
   actionCard: {
+    width: "48%", // Two columns with a bit of space
+    aspectRatio: 1, // Make it a square
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadows.small,
+  },
+  actionIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: borderRadius.round,
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: spacing.md,
   },
-  actionContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  actionInfo: {
-    flex: 1,
-    marginRight: spacing.md,
-  },
-  actionTitle: {
+  actionLabel: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  actionDescription: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: 20,
+    textAlign: "center",
   },
   logoutContainer: {
-    marginTop: 'auto',
+    paddingHorizontal: spacing.lg,
+    marginTop: "auto",
     paddingTop: spacing.lg,
   },
 });

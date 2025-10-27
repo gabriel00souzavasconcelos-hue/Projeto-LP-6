@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, RefreshControl, Linking } from "react-native";
-import { Ionicons } from '@expo/vector-icons';
-import * as DocumentPicker from 'expo-document-picker';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  TouchableOpacity,
+  RefreshControl,
+  Linking,
+  FlatList,
+  StatusBar,
+  ActivityIndicator,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
 import { colors, spacing, fontSize, fontWeight, borderRadius } from "../styles/theme";
 import ModernCard from "../components/ModernCard";
-import ModernButton from "../components/ModernButton";
 import { getDocumentsByPatient, uploadDocument, deleteDocument } from "../api/client";
 import { DocumentWithDetails, DocumentType } from "../types";
 
@@ -13,12 +25,21 @@ type Props = {
   route: any;
 };
 
+const documentTypes: { type: DocumentType; icon: any; label: string }[] = [
+  { type: "exame", icon: "flask-outline", label: "Exame" },
+  { type: "receita", icon: "receipt-outline", label: "Receita" },
+  { type: "laudo", icon: "document-text-outline", label: "Laudo" },
+  { type: "atestado", icon: "shield-checkmark-outline", label: "Atestado" },
+  { type: "pedido_exame", icon: "clipboard-outline", label: "Pedido" },
+  { type: "outro", icon: "document-attach-outline", label: "Outro" },
+];
+
 export default function PatientDocumentsScreen({ route }: Props) {
   const patient = route.params?.patient;
   const [documents, setDocuments] = useState<DocumentWithDetails[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [filter, setFilter] = useState<DocumentType | 'all'>('all');
+  const [filter, setFilter] = useState<DocumentType | "all">("all");
 
   useEffect(() => {
     if (patient?.codigo) {
@@ -27,6 +48,7 @@ export default function PatientDocumentsScreen({ route }: Props) {
   }, [patient?.codigo]);
 
   const loadDocuments = async () => {
+    setRefreshing(true);
     try {
       const data = await getDocumentsByPatient(patient.codigo);
       setDocuments(data);
@@ -38,24 +60,29 @@ export default function PatientDocumentsScreen({ route }: Props) {
     }
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadDocuments();
+  const handleChooseDocumentType = () => {
+    const options = documentTypes.map((doc) => ({ 
+      text: doc.label, 
+      onPress: () => pickDocument(doc.type) 
+    }));
+
+    Alert.alert(
+      "Tipo de Documento",
+      "Qual tipo de documento você deseja enviar?",
+      [...options, { text: "Cancelar", style: "cancel" }]
+    );
   };
 
   const pickDocument = async (tipo: DocumentType) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['image/*', 'application/pdf'],
+        type: ["image/*", "application/pdf"],
         copyToCacheDirectory: true,
       });
 
-      if (result.canceled) {
-        return;
-      }
+      if (result.canceled) return;
 
       const file = result.assets[0];
-      
       Alert.prompt(
         "Descrição do Documento",
         "Adicione uma descrição (opcional)",
@@ -64,9 +91,9 @@ export default function PatientDocumentsScreen({ route }: Props) {
           {
             text: "Enviar",
             onPress: async (descricao) => {
-              await handleUpload(file.uri, tipo, descricao || '');
-            }
-          }
+              await handleUpload(file.uri, tipo, descricao || "");
+            },
+          },
         ],
         "plain-text"
       );
@@ -76,17 +103,19 @@ export default function PatientDocumentsScreen({ route }: Props) {
     }
   };
 
-  const handleUpload = async (fileUri: string, tipo: DocumentType, descricao: string) => {
+  const handleUpload = async (
+    fileUri: string,
+    tipo: DocumentType,
+    descricao: string
+  ) => {
+    setUploading(true);
     try {
-      setUploading(true);
-      
       await uploadDocument(fileUri, {
         codigo_paciente: patient.codigo,
         tipo_documento: tipo,
         descricao: descricao || undefined,
-        enviado_por: 'paciente',
+        enviado_por: "paciente",
       });
-
       Alert.alert("Sucesso", "Documento enviado com sucesso!");
       loadDocuments();
     } catch (error: any) {
@@ -114,8 +143,8 @@ export default function PatientDocumentsScreen({ route }: Props) {
             } catch (error) {
               Alert.alert("Erro", "Não foi possível excluir o documento");
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
@@ -126,169 +155,107 @@ export default function PatientDocumentsScreen({ route }: Props) {
     });
   };
 
-  const getDocumentIcon = (tipo: DocumentType) => {
-    switch (tipo) {
-      case 'exame': return 'flask';
-      case 'receita': return 'receipt';
-      case 'laudo': return 'document-text';
-      case 'atestado': return 'document';
-      case 'pedido_exame': return 'clipboard';
-      case 'resultado_exame': return 'checkmark-done';
-      default: return 'document-attach';
-    }
+  const getDocumentDetails = (tipo: DocumentType) => {
+    return documentTypes.find(d => d.type === tipo) || documentTypes[documentTypes.length - 1];
   };
 
-  const getDocumentLabel = (tipo: DocumentType) => {
-    const labels: Record<DocumentType, string> = {
-      exame: 'Exame',
-      receita: 'Receita',
-      laudo: 'Laudo',
-      atestado: 'Atestado',
-      pedido_exame: 'Pedido de Exame',
-      resultado_exame: 'Resultado de Exame',
-      outro: 'Outro',
-    };
-    return labels[tipo];
+  const filteredDocuments = filter === "all" ? documents : documents.filter((doc) => doc.tipo_documento === filter);
+
+  const renderDocument = ({ item }: { item: DocumentWithDetails }) => {
+    const details = getDocumentDetails(item.tipo_documento);
+    return (
+      <ModernCard key={item.codigo} variant="elevated" style={styles.documentCard}>
+        <View style={styles.documentHeader}>
+          <View style={[styles.documentIcon, { backgroundColor: colors.primary + "20" }]}>
+            <Ionicons name={details.icon} size={24} color={colors.primary} />
+          </View>
+          <View style={styles.documentInfo}>
+            <Text style={styles.documentType}>{details.label}</Text>
+            <Text style={styles.documentDate}>
+              {new Date(item.criado_em || "").toLocaleDateString("pt-BR")}
+            </Text>
+          </View>
+          {item.enviado_por === "clinica" && (
+            <View style={styles.clinicBadge}>
+              <Ionicons name="business-outline" size={12} color={colors.success} />
+              <Text style={styles.clinicBadgeText}>Clínica</Text>
+            </View>
+          )}
+        </View>
+
+        {item.descricao && <Text style={styles.documentDescription}>{item.descricao}</Text>}
+        {item.clinica_nome && <Text style={styles.documentClinic}>Enviado por: {item.clinica_nome}</Text>}
+
+        <View style={styles.documentActions}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => openDocument(item.url_arquivo)}>
+            <Ionicons name="eye-outline" size={18} color={colors.primary} />
+            <Text style={styles.actionButtonText}>Ver</Text>
+          </TouchableOpacity>
+          {item.enviado_por === "paciente" && (
+            <TouchableOpacity style={[styles.actionButton, { marginLeft: spacing.sm }]} onPress={() => handleDelete(item.codigo!)}>
+              <Ionicons name="trash-outline" size={18} color={colors.error} />
+              <Text style={[styles.actionButtonText, { color: colors.error }]}>Excluir</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </ModernCard>
+    );
   };
-
-  const filteredDocuments = filter === 'all' 
-    ? documents 
-    : documents.filter(doc => doc.tipo_documento === filter);
-
-  const documentTypes: { type: DocumentType; icon: any; label: string }[] = [
-    { type: 'exame', icon: 'flask', label: 'Exame' },
-    { type: 'receita', icon: 'receipt', label: 'Receita' },
-    { type: 'laudo', icon: 'document-text', label: 'Laudo' },
-    { type: 'resultado_exame', icon: 'checkmark-done', label: 'Resultado' },
-  ];
 
   return (
     <View style={styles.container}>
-      {/* Botões de Upload */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.uploadButtonsContainer}>
-        {documentTypes.map((docType) => (
-          <TouchableOpacity
-            key={docType.type}
-            style={styles.uploadButton}
-            onPress={() => pickDocument(docType.type)}
-            disabled={uploading}
-          >
-            <View style={styles.uploadIconContainer}>
-              <Ionicons name={docType.icon} size={24} color={colors.primary} />
-            </View>
-            <Text style={styles.uploadButtonText}>{docType.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <LinearGradient colors={[colors.primary, colors.primaryDark]} style={styles.header}>
+        <Text style={styles.headerTitle}>Meus Documentos</Text>
+        <Text style={styles.headerSubtitle}>Gerencie seus exames, receitas e laudos</Text>
+      </LinearGradient>
 
-      {/* Filtros */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
-        <TouchableOpacity
-          style={[styles.filterChip, filter === 'all' && styles.filterChipActive]}
-          onPress={() => setFilter('all')}
-        >
-          <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>
-            Todos ({documents.length})
-          </Text>
-        </TouchableOpacity>
-        {documentTypes.map((docType) => {
-          const count = documents.filter(doc => doc.tipo_documento === docType.type).length;
-          return (
+      {/* This wrapper View is crucial for the layout */}
+      <View style={{ flex: 1 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterContainer}>
+          <TouchableOpacity
+            style={[styles.filterChip, filter === "all" && styles.filterChipActive]}
+            onPress={() => setFilter("all")}
+          >
+            <Text style={[styles.filterText, filter === "all" && styles.filterTextActive]}>Todos</Text>
+          </TouchableOpacity>
+          {documentTypes.map((docType) => (
             <TouchableOpacity
               key={docType.type}
               style={[styles.filterChip, filter === docType.type && styles.filterChipActive]}
               onPress={() => setFilter(docType.type)}
             >
-              <Ionicons
-                name={docType.icon}
-                size={14}
-                color={filter === docType.type ? colors.surface : colors.primary}
-                style={{ marginRight: 4 }}
-              />
               <Text style={[styles.filterText, filter === docType.type && styles.filterTextActive]}>
-                {docType.label} ({count})
+                {docType.label}
               </Text>
             </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+          ))}
+        </ScrollView>
 
-      {/* Lista de Documentos */}
-      <ScrollView
-        style={styles.documentsList}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {filteredDocuments.length === 0 ? (
-          <ModernCard variant="outlined" style={styles.emptyCard}>
-            <Ionicons name="folder-open-outline" size={48} color={colors.textSecondary} />
-            <Text style={styles.emptyText}>Nenhum documento</Text>
-            <Text style={styles.emptySubtext}>
-              {filter === 'all' 
-                ? 'Comece enviando seus documentos médicos'
-                : `Nenhum documento do tipo "${getDocumentLabel(filter as DocumentType)}"`
-              }
-            </Text>
-          </ModernCard>
-        ) : (
-          filteredDocuments.map((doc) => (
-            <ModernCard key={doc.codigo} variant="elevated" style={styles.documentCard}>
-              <View style={styles.documentHeader}>
-                <View style={[styles.documentIcon, { backgroundColor: colors.primary + '20' }]}>
-                  <Ionicons name={getDocumentIcon(doc.tipo_documento)} size={24} color={colors.primary} />
-                </View>
-                <View style={styles.documentInfo}>
-                  <Text style={styles.documentType}>{getDocumentLabel(doc.tipo_documento)}</Text>
-                  <Text style={styles.documentDate}>
-                    {new Date(doc.criado_em || '').toLocaleDateString('pt-BR')}
-                  </Text>
-                </View>
-                {doc.enviado_por === 'clinica' && (
-                  <View style={styles.clinicBadge}>
-                    <Ionicons name="business" size={12} color={colors.success} />
-                    <Text style={styles.clinicBadgeText}>Clínica</Text>
-                  </View>
-                )}
-              </View>
+        <FlatList
+          style={{ flex: 1 }} // This flex: 1 is also crucial
+          data={filteredDocuments}
+          renderItem={renderDocument}
+          keyExtractor={(item) => item.codigo!.toString()}
+          contentContainerStyle={styles.listContentContainer}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={loadDocuments} tintColor={colors.primary} />}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="folder-open-outline" size={60} color={colors.textMuted} />
+              <Text style={styles.emptyText}>Nenhum Documento Encontrado</Text>
+              <Text style={styles.emptySubtext}>
+                {filter === "all"
+                  ? "Use o botão (+) para adicionar seus documentos"
+                  : `Não há documentos do tipo \"${getDocumentDetails(filter).label}\"`}
+              </Text>
+            </View>
+          )}
+        />
+      </View>
 
-              {doc.descricao && (
-                <Text style={styles.documentDescription}>{doc.descricao}</Text>
-              )}
-
-              {doc.clinica_nome && (
-                <Text style={styles.documentClinic}>📍 {doc.clinica_nome}</Text>
-              )}
-
-              <View style={styles.documentActions}>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => openDocument(doc.url_arquivo)}
-                >
-                  <Ionicons name="eye" size={18} color={colors.primary} />
-                  <Text style={styles.actionButtonText}>Visualizar</Text>
-                </TouchableOpacity>
-                
-                {doc.enviado_por === 'paciente' && (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => handleDelete(doc.codigo!)}
-                  >
-                    <Ionicons name="trash" size={18} color={colors.error} />
-                    <Text style={[styles.actionButtonText, { color: colors.error }]}>Excluir</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </ModernCard>
-          ))
-        )}
-      </ScrollView>
-
-      {uploading && (
-        <View style={styles.uploadingOverlay}>
-          <ModernCard variant="elevated" style={styles.uploadingCard}>
-            <Text style={styles.uploadingText}>Enviando documento...</Text>
-          </ModernCard>
-        </View>
-      )}
+      <TouchableOpacity style={styles.fab} onPress={handleChooseDocumentType} disabled={uploading}>
+        {uploading ? <ActivityIndicator color={colors.onPrimary} /> : <Ionicons name="add" size={32} color={colors.onPrimary} />}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -298,164 +265,158 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  uploadButtonsContainer: {
+  header: {
     padding: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.xxl,
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
   },
-  uploadButton: {
-    alignItems: 'center',
-    marginRight: spacing.md,
-    width: 80,
+  headerTitle: {
+    fontSize: fontSize.xxxl,
+    fontWeight: fontWeight.bold,
+    color: colors.onPrimary,
+    textAlign: "center",
   },
-  uploadIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: borderRadius.round,
-    backgroundColor: colors.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-  },
-  uploadButtonText: {
-    fontSize: fontSize.xs,
-    color: colors.text,
-    textAlign: 'center',
+  headerSubtitle: {
+    fontSize: fontSize.md,
+    color: colors.onPrimary,
+    textAlign: "center",
+    marginTop: spacing.xs,
+    opacity: 0.9,
   },
   filterContainer: {
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
   },
   filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm, // Reduced from md
+    paddingVertical: spacing.xs,   // Reduced from sm
     borderRadius: borderRadius.round,
-    borderWidth: 1,
-    borderColor: colors.border,
     backgroundColor: colors.surface,
     marginRight: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center', // Align text vertically
   },
   filterChipActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   filterText: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.sm, // Reverted to sm
+    fontWeight: fontWeight.medium,
     color: colors.text,
-    fontWeight: fontWeight.medium as any,
   },
   filterTextActive: {
-    color: colors.surface,
+    color: colors.onPrimary,
   },
-  documentsList: {
-    flex: 1,
-    padding: spacing.lg,
-    paddingTop: 0,
+  listContentContainer: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl, // Add padding for FAB
   },
-  emptyCard: {
-    alignItems: 'center',
-    padding: spacing.xl,
-    marginTop: spacing.xl,
+  emptyContainer: {
+    alignItems: "center",
+    paddingTop: spacing.xxl * 2,
   },
   emptyText: {
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.medium as any,
+    fontWeight: fontWeight.semibold,
     color: colors.textSecondary,
     marginTop: spacing.md,
   },
   emptySubtext: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-    textAlign: 'center',
+    fontSize: fontSize.md,
+    color: colors.textMuted,
+    textAlign: "center",
+    marginTop: spacing.sm,
+    maxWidth: "80%",
   },
   documentCard: {
     marginBottom: spacing.md,
+    padding: spacing.md,
   },
   documentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
   },
   documentIcon: {
     width: 48,
     height: 48,
-    borderRadius: borderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.sm,
+    borderRadius: borderRadius.round,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: spacing.md,
   },
   documentInfo: {
     flex: 1,
   },
   documentType: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold as any,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
     color: colors.text,
   },
   documentDate: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
+    marginTop: 2,
   },
   clinicBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.success + '20',
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.success + "20",
   },
   clinicBadgeText: {
     fontSize: fontSize.xs,
     color: colors.success,
-    fontWeight: fontWeight.medium as any,
+    fontWeight: fontWeight.semibold,
   },
   documentDescription: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginBottom: spacing.sm,
+    marginVertical: spacing.md,
   },
   documentClinic: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginBottom: spacing.sm,
+    fontStyle: "italic",
+    marginBottom: spacing.md,
   },
   documentActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingTop: spacing.sm,
+    flexDirection: "row",
+    paddingTop: spacing.md,
+    marginTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
   actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.background,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
   actionButtonText: {
-    fontSize: fontSize.sm,
-    color: colors.primary,
-    fontWeight: fontWeight.medium as any,
-  },
-  uploadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  uploadingCard: {
-    padding: spacing.xl,
-  },
-  uploadingText: {
     fontSize: fontSize.md,
-    color: colors.text,
+    fontWeight: fontWeight.medium,
+    color: colors.primary,
+  },
+  fab: {
+    position: "absolute",
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 8,
+    shadowColor: colors.shadow,
+    shadowRadius: 6,
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
   },
 });

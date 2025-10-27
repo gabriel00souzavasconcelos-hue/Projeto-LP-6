@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import ModernInput from "../components/ModernInput";
 import ModernButton from "../components/ModernButton";
 import CircularImage from "../components/CircularImage";
@@ -72,11 +71,7 @@ export default function RegisterClinic({ navigation }: Props) {
   }
 
   return (
-    <LinearGradient
-      colors={[colors.primaryLight, colors.background, colors.background]}
-      locations={[0, 0.3, 1]}
-      style={styles.container}
-    >
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -166,13 +161,14 @@ export default function RegisterClinic({ navigation }: Props) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   contentContainer: {
     flexGrow: 1,

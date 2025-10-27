@@ -6,11 +6,12 @@ import {
   Alert,
   ScrollView,
   TouchableOpacity,
-  Image,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import ModernInput from "../components/ModernInput";
 import ModernButton from "../components/ModernButton";
 import {
@@ -59,11 +60,16 @@ export default function LoginScreen({ navigation }: Props) {
   }
 
   return (
-    <LinearGradient
-      colors={[colors.primaryLight, colors.background, colors.background]}
-      locations={[0, 0.4, 1]}
-      style={styles.container}
-    >
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient
+        colors={[colors.primary, colors.primaryDark]}
+        style={styles.header}
+      >
+        <Ionicons name="log-in-outline" size={48} color={colors.onPrimary} />
+        <Text style={styles.title}>Bem-vindo!</Text>
+        <Text style={styles.subtitle}>Acesse sua conta para continuar</Text>
+      </LinearGradient>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -72,17 +78,6 @@ export default function LoginScreen({ navigation }: Props) {
           contentContainerStyle={styles.contentContainer}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
-            <Image
-              source={require("../../assets/clinic-placeholder.jpg")} // Placeholder for the logo
-              style={styles.logo}
-            />
-            <Text style={styles.title}>Bem-vindo de volta!</Text>
-            <Text style={styles.subtitle}>
-              Acesse sua conta para continuar
-            </Text>
-          </View>
-
           <View style={styles.formContainer}>
             <View style={styles.roleSelector}>
               <TouchableOpacity
@@ -173,57 +168,56 @@ export default function LoginScreen({ navigation }: Props) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  contentContainer: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: spacing.lg,
+    backgroundColor: colors.background,
   },
   header: {
     alignItems: "center",
-    marginBottom: spacing.xl,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    borderRadius: borderRadius.round,
-    marginBottom: spacing.lg,
-    borderColor: colors.surface,
-    borderWidth: 3,
+    justifyContent: "center",
+    padding: spacing.lg,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.lg, // No extra padding
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
   },
   title: {
     fontSize: fontSize.xxxl,
     fontWeight: fontWeight.bold,
-    color: colors.text,
+    color: colors.onPrimary,
     textAlign: "center",
-    marginBottom: spacing.xs,
+    marginTop: spacing.md,
   },
   subtitle: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
+    fontSize: fontSize.lg,
+    color: colors.onPrimary,
     textAlign: "center",
+    opacity: 0.9,
+    marginTop: spacing.xs,
+  },
+  contentContainer: {
+    padding: spacing.lg,
   },
   formContainer: {
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     padding: spacing.lg,
     marginBottom: spacing.xl,
+    // No more negative margin
     ...Platform.select({
       ios: {
         shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
-        shadowRadius: 10,
+        shadowRadius: 15,
       },
       android: {
-        elevation: 8,
+        elevation: 10,
       },
     }),
   },
@@ -283,7 +277,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   guestActions: {
-    marginTop: "auto",
     paddingTop: spacing.lg,
   },
 });
