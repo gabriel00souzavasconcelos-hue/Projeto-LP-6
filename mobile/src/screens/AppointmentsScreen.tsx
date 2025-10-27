@@ -121,12 +121,12 @@ export default function AppointmentsScreen({ route, navigation }: Props) {
         </View>
 
         <View style={styles.appointmentBody}>
-          <Text style={styles.clinicName}>{item.clinicas?.nome || item.clinica_nome}</Text>
+          <Text style={styles.clinicName}>{item.clinica_nome}</Text>
           <Text style={styles.specializationText}>
-            {item.especializacoes?.nome || item.especializacao_nome}
+            {item.especializacao_nome}
           </Text>
-          {item.clinicas?.endereco && (
-            <Text style={styles.addressText}>📍 {item.clinicas.endereco}</Text>
+          {item.clinica_endereco && (
+            <Text style={styles.addressText}>📍 {item.clinica_endereco}</Text>
           )}
         </View>
 
@@ -188,7 +188,10 @@ export default function AppointmentsScreen({ route, navigation }: Props) {
         )}
       />
 
-      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate("ClinicList")}>
+      <TouchableOpacity 
+        style={styles.fab} 
+        onPress={() => navigation.navigate("ClinicList", { patient })}
+      >
         <Ionicons name="add" size={32} color={colors.onPrimary} />
       </TouchableOpacity>
     </View>

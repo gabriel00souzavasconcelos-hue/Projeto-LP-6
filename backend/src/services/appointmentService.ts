@@ -52,7 +52,15 @@ export async function getAppointmentsByPatient(codigo_paciente: number): Promise
   if (error) throw error;
 
   return (data || []).map((item: any) => ({
-    ...item,
+    codigo: item.codigo,
+    codigo_paciente: item.codigo_paciente,
+    codigo_clinica: item.codigo_clinica,
+    codigo_especializacao: item.codigo_especializacao,
+    data_hora: item.data_hora,
+    status: item.status,
+    observacoes: item.observacoes,
+    criado_em: item.criado_em,
+    atualizado_em: item.atualizado_em,
     clinica_nome: item.clinicas?.nome,
     clinica_endereco: item.clinicas?.endereco,
     especializacao_nome: item.especializacoes?.nome,
@@ -73,7 +81,15 @@ export async function getAppointmentsByClinic(codigo_clinica: number): Promise<A
   if (error) throw error;
 
   return (data || []).map((item: any) => ({
-    ...item,
+    codigo: item.codigo,
+    codigo_paciente: item.codigo_paciente,
+    codigo_clinica: item.codigo_clinica,
+    codigo_especializacao: item.codigo_especializacao,
+    data_hora: item.data_hora,
+    status: item.status,
+    observacoes: item.observacoes,
+    criado_em: item.criado_em,
+    atualizado_em: item.atualizado_em,
     paciente_nome: item.pacientes?.nome,
     paciente_email: item.pacientes?.email,
     especializacao_nome: item.especializacoes?.nome,

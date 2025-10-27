@@ -40,11 +40,15 @@ export default function LoginScreen({ navigation }: Props) {
 
     try {
       const resp = await authLogin(email, senha, role);
+      console.log('Login response:', resp); // Debug
+      
       if (!resp?.user) {
         Alert.alert("Erro de Login", "Credenciais inválidas. Tente novamente.");
         return;
       }
 
+      console.log('User data:', resp.user); // Debug
+      
       if (role === "paciente") {
         navigation.replace("PatientMenu", { patient: resp.user });
       } else {

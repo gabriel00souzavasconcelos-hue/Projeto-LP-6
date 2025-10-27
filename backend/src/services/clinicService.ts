@@ -205,7 +205,9 @@ export class ClinicService {
       const { data, error } = await supabase
         .from('clinicas_especializacoes')
         .select(`
-          especializacao:especializacoes(
+          codigo_especializacao,
+          especializacoes!inner (
+            codigo,
             nome
           )
         `)
@@ -215,7 +217,21 @@ export class ClinicService {
         throw new Error(error.message);
       }
 
-      return data?.map(item => item.especializacao).filter(Boolean) || [];
+      console.log('Raw data from Supabase:', JSON.stringify(data, null, 2));
+
+      // Retornar as especializações com código e nome
+      const result = data?.map((item: any) => {
+        // especializacoes pode ser um objeto ou array dependendo do Supabase
+        const espec = Array.isArray(item.especializacoes) ? item.especializacoes[0] : item.especializacoes;
+        
+        return {
+          codigo: espec?.codigo || item.codigo_especializacao,
+          nome: espec?.nome || 'Especialização sem nome'
+        };
+      }).filter(spec => spec.codigo) || [];
+      
+      console.log('Processed specializations:', JSON.stringify(result, null, 2));
+      return result;
     } catch (error) {
       console.error('Error fetching clinic specializations:', error);
       throw error;

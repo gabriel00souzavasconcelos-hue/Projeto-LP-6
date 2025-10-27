@@ -20,7 +20,7 @@ export type Clinic = {
 };
 
 export type Specialization = {
-  codigo?: number; 
+  codigo: number; 
   nome: string;
 };
 

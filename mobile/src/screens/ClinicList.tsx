@@ -44,6 +44,11 @@ export default function ClinicList({ navigation, route }: Props) {
 
   const { specializations } = useSpecializations();
 
+  // Debug - verificar se patient está chegando
+  useEffect(() => {
+    console.log('ClinicList - Patient data:', patient);
+  }, [patient]);
+
   const fetchClinics = async () => {
     setLoading(true);
     try {

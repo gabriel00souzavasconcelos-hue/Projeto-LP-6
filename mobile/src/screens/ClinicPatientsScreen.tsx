@@ -114,7 +114,7 @@ export default function ClinicPatientsScreen({ route, navigation }: Props) {
 
   // Agrupar por paciente
   const patientGroups = filteredAppointments.reduce((acc, apt) => {
-    const patientName = apt.pacientes?.nome || apt.paciente_nome || 'Paciente';
+    const patientName = apt.paciente_nome || 'Paciente';
     if (!acc[patientName]) {
       acc[patientName] = [];
     }
@@ -195,14 +195,11 @@ export default function ClinicPatientsScreen({ route, navigation }: Props) {
                     </View>
 
                     <Text style={styles.specializationText}>
-                      {apt.especializacoes?.nome || apt.especializacao_nome}
+                      {apt.especializacao_nome}
                     </Text>
 
-                    {apt.pacientes?.email && (
-                      <Text style={styles.contactText}>📧 {apt.pacientes.email}</Text>
-                    )}
-                    {apt.pacientes?.fone && (
-                      <Text style={styles.contactText}>📱 {apt.pacientes.fone}</Text>
+                    {apt.paciente_email && (
+                      <Text style={styles.contactText}>📧 {apt.paciente_email}</Text>
                     )}
                     {apt.observacoes && (
                       <Text style={styles.observationsText}>💬 {apt.observacoes}</Text>

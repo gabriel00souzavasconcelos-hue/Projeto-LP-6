@@ -18,6 +18,11 @@ export function convertDateFromISO(dateString: string): string {
   return `${day}/${month}/${year}`;
 }
 
+// Alias para convertDateFromISO
+export function convertISOToDate(dateString: string): string {
+  return convertDateFromISO(dateString);
+}
+
 // Função para formatar data conforme o usuário digita DD/MM/YYYY
 export function formatDateInput(input: string): string {
   // Remove tudo que não é número

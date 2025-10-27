@@ -95,15 +95,26 @@ export default function ClinicDetailsScreen({ route, navigation }: Props) {
           </View>
         )}
 
-        {patient && (
-          <View style={styles.actionSection}>
-            <ModernButton
-              title="Agendar Consulta"
-              onPress={() => navigation.navigate('BookAppointment', { clinic, patient })}
-              fullWidth
-            />
-          </View>
-        )}
+        <View style={styles.actionSection}>
+          <ModernButton
+            title="Agendar Consulta"
+            onPress={() => {
+              console.log('Patient data:', patient); // Debug
+              if (!patient || !patient.codigo) {
+                Alert.alert(
+                  'Atenção', 
+                  'É necessário estar logado como paciente para agendar consultas.',
+                  [
+                    { text: 'OK', onPress: () => navigation.goBack() }
+                  ]
+                );
+                return;
+              }
+              navigation.navigate('BookAppointment', { clinic, patient });
+            }}
+            fullWidth
+          />
+        </View>
       </ModernCard>
     </ScrollView>
   );

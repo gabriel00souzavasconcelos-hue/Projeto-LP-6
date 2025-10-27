@@ -35,31 +35,70 @@ export default function BookAppointmentScreen({ route, navigation }: Props) {
     }
   }, [selectedDate]);
 
-  useEffect(() => {
-    console.log("📌 Especialização mudou para:", selectedSpecialization);
-  }, [selectedSpecialization]);
-
   const loadSpecializations = async () => {
     try {
-      console.log("🔍 Carregando especializações para clínica:", clinic.codigo);
       const data = await getClinicSpecializations(clinic.codigo);
-      console.log("📦 Especializações recebidas:", JSON.stringify(data, null, 2));
-      setSpecializations(data || []);
-      
-      if (!data || data.length === 0) {
-        Alert.alert("Atenção", "Esta clínica não possui especializações cadastradas");
-      }
-    } catch (error: any) {
-      console.error("❌ Erro ao carregar especializações:", error);
-      Alert.alert("Erro", `Não foi possível carregar as especializações: ${error.message}`);
+      setSpecializations(data);
+    } catch (error) {
+      console.error("Erro ao carregar especializações:", error);
+    }
+  };
+    } catch (error) {
+      console.error("Erro ao carregar especializações:", error);
     }
   };
 
-  const loadAvailableSlots = async () => {
+  // Valida se a data está no formato DD/MM/AAAA, é uma data real e não está no passado
+  const isValidDate = (date: string) => {
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(date)) return false;
+    const [day, month, year] = date.split('/').map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    if (
+      dateObj.getFullYear() !== year ||
+      dateObj.getMonth() !== month - 1 ||
+      dateObj.getDate() !== day
+    ) {
+      return false;
+    }
+    // Não permite datas no passado
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    return dateObj >= today;
+  };
+
+  // Máscara para DD/MM/AAAA
+  const formatDateInput = (text: string) => {
+    const cleaned = text.replace(/\D/g, '');
+    let formatted = cleaned;
+    if (cleaned.length > 2 && cleaned.length <= 4) {
+      formatted = cleaned.slice(0,2) + '/' + cleaned.slice(2);
+    } else if (cleaned.length > 4) {
+      formatted = cleaned.slice(0,2) + '/' + cleaned.slice(2,4) + '/' + cleaned.slice(4,8);
+    }
+    return formatted;
+  };
+
+  // Converte DD/MM/AAAA para AAAA-MM-DD
+  const convertToApiDate = (date: string) => {
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(date)) {
+      const [day, month, year] = date.split('/');
+      return `${year}-${month}-${day}`;
+    }
+    return '';
+  };
+
+  const handleDateChange = async (text: string) => {
+    const formatted = formatDateInput(text);
+    setSelectedDate(formatted);
     setSelectedSlot("");
-    const apiDate = formatDateForAPI(selectedDate);
-    
-    if (clinic.codigo) {
+
+    if (!isValidDate(formatted)) {
+      setAvailableSlots([]);
+      return;
+    }
+
+    const apiDate = convertToApiDate(formatted);
+    if (apiDate && clinic.codigo) {
       try {
         const slots = await getAvailableSlots(clinic.codigo, apiDate);
         setAvailableSlots(slots);
@@ -72,37 +111,7 @@ export default function BookAppointmentScreen({ route, navigation }: Props) {
     }
   };
 
-  const formatDateForAPI = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const formatDateForDisplay = (date: Date): string => {
-    return date.toLocaleDateString('pt-BR', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
-
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
-    if (selectedDate) {
-      setSelectedDate(selectedDate);
-    }
-  };
-
   const handleBookAppointment = async () => {
-    console.log("=== INICIANDO AGENDAMENTO ===");
-    console.log("selectedSpecialization:", selectedSpecialization);
-    console.log("selectedDate:", selectedDate);
-    console.log("selectedSlot:", selectedSlot);
-    console.log("patient:", patient);
-    console.log("clinic:", clinic);
-
     if (!selectedSpecialization) {
       Alert.alert("Atenção", "Selecione uma especialização");
       return;
@@ -114,48 +123,41 @@ export default function BookAppointmentScreen({ route, navigation }: Props) {
     }
     
     if (!selectedSlot) {
-      Alert.alert("Atenção", "Selecione um horário disponível");
+      Alert.alert("Atenção", "Selecione um horário");
       return;
     }
 
     try {
       setLoading(true);
       
-      console.log("Data/Hora selecionada:", selectedSlot);
-      
-      const payload = {
+      await createAppointment({
         codigo_paciente: patient.codigo,
         codigo_clinica: clinic.codigo,
         codigo_especializacao: selectedSpecialization,
         data_hora: selectedSlot,
-        status: 'agendada' as const,
+        status: 'agendada',
         observacoes: observacoes || undefined,
-      };
-      
-      console.log("Payload do agendamento:", payload);
-      
-      const result = await createAppointment(payload);
-      console.log("Resultado do agendamento:", result);
+      });
 
       Alert.alert("Sucesso", "Consulta agendada com sucesso!", [
         { text: "OK", onPress: () => navigation.goBack() }
       ]);
     } catch (error: any) {
       console.error("Erro ao agendar consulta:", error);
-      console.error("Erro detalhado:", error.response?.data || error.message);
-      Alert.alert("Erro", `Não foi possível agendar a consulta: ${error.response?.data?.error || error.message}`);
+      Alert.alert("Erro", "Não foi possível agendar a consulta");
     } finally {
       setLoading(false);
     }
   };
 
+  const getMinDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
   const formatSlotTime = (slot: string) => {
     const date = new Date(slot);
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const getMinDate = () => {
-    return new Date();
   };
 
   return (
@@ -168,67 +170,45 @@ export default function BookAppointmentScreen({ route, navigation }: Props) {
 
       <View style={styles.formSection}>
         <Text style={styles.sectionTitle}>Especialização</Text>
-        {specializations.length === 0 ? (
-          <Text style={styles.noSlotsText}>Carregando especializações...</Text>
-        ) : (
-          <View style={styles.specializationsContainer}>
-            {specializations.map((spec) => {
-              if (!spec || !spec.codigo) {
-                return null;
-              }
-              const isSelected = selectedSpecialization === spec.codigo;
-              return (
-                <TouchableOpacity
-                  key={spec.codigo}
-                  style={[
-                    styles.specializationChip,
-                    isSelected && styles.specializationChipSelected,
-                  ]}
-                  onPress={() => {
-                    console.log("🎯 Selecionou especialização:", spec.codigo, spec.nome);
-                    setSelectedSpecialization(spec.codigo);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.specializationText,
-                    isSelected && styles.specializationTextSelected,
-                  ]}>
-                    {spec.nome}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
+        <View style={styles.specializationsContainer}>
+          {specializations.map((spec) => {
+            const isSelected = selectedSpecialization === spec.codigo;
+            return (
+              <TouchableOpacity
+                key={spec.codigo}
+                style={[
+                  styles.specializationChip,
+                  isSelected && styles.specializationChipSelected,
+                  isSelected && { borderColor: colors.primary, borderWidth: 2, shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3 }
+                ]}
+                onPress={() => setSelectedSpecialization(spec.codigo!)}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.specializationText,
+                  isSelected && styles.specializationTextSelected,
+                  isSelected && { color: colors.surface, fontWeight: fontWeight.bold }
+                ]}>
+                  {spec.nome}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       <View style={styles.formSection}>
         <Text style={styles.sectionTitle}>Data da Consulta</Text>
-        <TouchableOpacity 
-          style={styles.datePickerButton}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Ionicons name="calendar" size={24} color={colors.primary} />
-          <View style={styles.datePickerTextContainer}>
-            <Text style={styles.datePickerLabel}>Data Selecionada:</Text>
-            <Text style={styles.datePickerText}>
-              {formatDateForDisplay(selectedDate)}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={selectedDate}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={onDateChange}
-            minimumDate={getMinDate()}
-            locale="pt-BR"
-          />
-        )}
+        <ModernInput
+          placeholder="DD/MM/AAAA"
+          value={selectedDate}
+          onChangeText={handleDateChange}
+          icon="calendar-outline"
+          keyboardType="numeric"
+          maxLength={10}
+          error={selectedDate.length === 10 && !isValidDate(selectedDate) ? "Data inválida ou no passado" : undefined}
+        />
+        <Text style={styles.helperText}>Digite a data no formato DD/MM/AAAA (Ex: 25/10/2025)</Text>
       </View>
 
       {availableSlots.length > 0 && (
@@ -242,9 +222,7 @@ export default function BookAppointmentScreen({ route, navigation }: Props) {
                   styles.slotChip,
                   selectedSlot === slot && styles.slotChipSelected
                 ]}
-                onPress={() => {
-                  setSelectedSlot(slot);
-                }}
+                onPress={() => setSelectedSlot(slot)}
               >
                 <Ionicons 
                   name="time-outline" 
@@ -263,11 +241,11 @@ export default function BookAppointmentScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      {availableSlots.length === 0 && (
+      {selectedDate && availableSlots.length === 0 && (
         <ModernCard variant="outlined" style={styles.noSlotsCard}>
-          <Ionicons name="time-outline" size={40} color={colors.primary} />
-          <Text style={styles.noSlotsText}>Nenhum horário pré-definido</Text>
-          <Text style={styles.noSlotsSubtext}>Digite o horário desejado abaixo</Text>
+          <Ionicons name="sad-outline" size={40} color={colors.textSecondary} />
+          <Text style={styles.noSlotsText}>Nenhum horário disponível para esta data</Text>
+          <Text style={styles.noSlotsSubtext}>Tente selecionar outra data</Text>
         </ModernCard>
       )}
 
@@ -284,17 +262,6 @@ export default function BookAppointmentScreen({ route, navigation }: Props) {
       </View>
 
       <View style={styles.buttonContainer}>
-        {/* Debug Info */}
-        <View style={{ backgroundColor: '#f0f0f0', padding: 10, marginBottom: 10, borderRadius: 8 }}>
-          <Text style={{ fontSize: 12, marginBottom: 5 }}>🔍 Debug:</Text>
-          <Text style={{ fontSize: 11 }}>Especialização: {selectedSpecialization ? '✅' : '❌'}</Text>
-          <Text style={{ fontSize: 11 }}>Data: {selectedDate ? '✅' : '❌'}</Text>
-          <Text style={{ fontSize: 11 }}>Slot: {selectedSlot ? '✅ ' + selectedSlot : '❌'}</Text>
-          <Text style={{ fontSize: 11, fontWeight: 'bold', marginTop: 5 }}>
-            Botão: {loading || !selectedSpecialization || !selectedDate || !selectedSlot ? '🔴 DESABILITADO' : '🟢 HABILITADO'}
-          </Text>
-        </View>
-        
         <ModernButton
           title={loading ? "Agendando..." : "Confirmar Agendamento"}
           onPress={handleBookAppointment}
@@ -344,16 +311,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.round,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: colors.primary,
     backgroundColor: colors.surface,
   },
   specializationChipSelected: {
     backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
   },
   specializationText: {
     fontSize: fontSize.sm,
@@ -362,31 +325,11 @@ const styles = StyleSheet.create({
   },
   specializationTextSelected: {
     color: colors.surface,
-    fontWeight: fontWeight.bold as any,
   },
-  datePickerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    gap: spacing.sm,
-  },
-  datePickerTextContainer: {
-    flex: 1,
-  },
-  datePickerLabel: {
+  helperText: {
     fontSize: fontSize.xs,
     color: colors.textSecondary,
-    marginBottom: 2,
-  },
-  datePickerText: {
-    fontSize: fontSize.md,
-    color: colors.text,
-    fontWeight: fontWeight.medium as any,
-    textTransform: 'capitalize',
+    marginTop: spacing.xs,
   },
   slotsContainer: {
     flexDirection: 'row',
@@ -425,19 +368,11 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium as any,
     color: colors.textSecondary,
     marginTop: spacing.sm,
-    textAlign: 'center',
   },
   noSlotsSubtext: {
     fontSize: fontSize.sm,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-    textAlign: 'center',
-  },
-  helpText: {
-    fontSize: fontSize.xs,
     color: colors.textSecondary,
     marginTop: spacing.xs,
-    fontStyle: 'italic',
   },
   buttonContainer: {
     marginTop: spacing.md,

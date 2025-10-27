@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS pacientes (
   codigo SERIAL PRIMARY KEY,
   nome VARCHAR(40) NOT NULL,
-  datan DATE NOT NULL,
-  fone VARCHAR(20) NOT NULL,
-  ende VARCHAR(120) NOT NULL,
+  datan DATE,
+  fone VARCHAR(20),
+  ende VARCHAR(120),
   email VARCHAR(120) NOT NULL UNIQUE,
   senha VARCHAR(200) NOT NULL
 );
@@ -11,10 +11,10 @@ CREATE TABLE IF NOT EXISTS pacientes (
 CREATE TABLE IF NOT EXISTS clinicas (
   codigo SERIAL PRIMARY KEY,
   nome VARCHAR(60) NOT NULL,
-  endereco VARCHAR(120) NOT NULL,
-  fone VARCHAR(20) NOT NULL,
+  endereco VARCHAR(120),
+  fone VARCHAR(20),
   email VARCHAR(120) NOT NULL UNIQUE,
-  senha VARCHAR(200) NOT NULL,
+  senha VARCHAR(200),
   imagem TEXT
 );
 

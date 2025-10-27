@@ -68,6 +68,11 @@ export async function getPatient(id: number) {
   return res.data as Patient;
 }
 
+export async function updatePatient(id: number, payload: Partial<Omit<Patient, "codigo">>) {
+  const res = await api.put(`/patients/${id}`, payload);
+  return res.data as Patient;
+}
+
 
 export async function createClinic(payload: Omit<Clinic, "codigo">) {
   const res = await api.post("/clinics", payload);
