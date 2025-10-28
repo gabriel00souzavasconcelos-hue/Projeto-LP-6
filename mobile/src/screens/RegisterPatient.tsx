@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import ModernInput from "../components/ModernInput";
 import ModernButton from "../components/ModernButton";
@@ -73,6 +75,18 @@ export default function RegisterPatient({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+      <LinearGradient
+        colors={[colors.primary, colors.primaryDark]}
+        style={styles.headerGradient}
+      >
+        <Ionicons name="person-add-outline" size={50} color={colors.onPrimary} />
+        <Text style={styles.headerTitle}>Crie sua Conta</Text>
+        <Text style={styles.headerSubtitle}>
+          Preencha seus dados para se cadastrar
+        </Text>
+      </LinearGradient>
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -81,19 +95,6 @@ export default function RegisterPatient({ navigation }: Props) {
           contentContainerStyle={styles.contentContainer}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
-            <Ionicons
-              name="person-add-outline"
-              size={60}
-              color={colors.primary}
-              style={styles.icon}
-            />
-            <Text style={styles.title}>Crie sua Conta</Text>
-            <Text style={styles.subtitle}>
-              Preencha seus dados para se cadastrar como paciente
-            </Text>
-          </View>
-
           <View style={styles.formContainer}>
             <ModernInput
               label="Nome Completo *"
@@ -176,36 +177,37 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  headerGradient: {
+    paddingTop: 60,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    alignItems: "center",
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
+  },
+  headerTitle: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: colors.onPrimary,
+    textAlign: "center",
+    marginTop: spacing.md,
+  },
+  headerSubtitle: {
+    fontSize: fontSize.md,
+    color: colors.onPrimary,
+    textAlign: "center",
+    marginTop: spacing.xs,
+    opacity: 0.9,
+  },
   contentContainer: {
     flexGrow: 1,
-    justifyContent: "center",
     padding: spacing.lg,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: spacing.xl,
-  },
-  icon: {
-    marginBottom: spacing.lg,
-  },
-  title: {
-    fontSize: fontSize.xxxl,
-    fontWeight: fontWeight.bold,
-    color: colors.primary,
-    textAlign: "center",
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    textAlign: "center",
-    maxWidth: "80%",
   },
   formContainer: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
-    marginBottom: spacing.xl,
+    marginTop: -spacing.xl,
     ...Platform.select({
       ios: {
         shadowColor: colors.shadow,
@@ -225,6 +227,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    marginTop: spacing.xl,
   },
   footerText: {
     fontSize: fontSize.md,

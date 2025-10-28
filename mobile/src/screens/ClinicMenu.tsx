@@ -1,5 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, Image } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Image, StatusBar, Platform } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "../navigation";
 import ModernButton from "../components/ModernButton";
 import ModernCard from "../components/ModernCard";
@@ -14,15 +16,20 @@ export default function ClinicMenu({ route, navigation }: Props) {
   const clinic = route.params?.clinic;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
       
-      <View style={styles.header}>
-        <Text style={styles.welcomeText}>Painel da Clínica 🏥</Text>
-        <Text style={styles.clinicName}>{clinic?.nome || "Clínica"}</Text>
-        <Text style={styles.subtitle}>Gerencie sua clínica</Text>
-      </View>
+      <LinearGradient
+        colors={[colors.primary, colors.primaryDark]}
+        style={styles.headerGradient}
+      >
+        <Ionicons name="business-outline" size={50} color={colors.onPrimary} />
+        <Text style={styles.headerTitle}>Painel da Clínica</Text>
+        <Text style={styles.headerSubtitle}>{clinic?.nome || "Clínica"}</Text>
+      </LinearGradient>
 
-      
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        <View style={styles.formContainer}>
       <ModernCard variant="elevated" style={styles.clinicCard}>
         <View style={styles.clinicInfo}>
           <View style={styles.clinicHeader}>
@@ -162,7 +169,9 @@ export default function ClinicMenu({ route, navigation }: Props) {
           fullWidth
         />
       </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -171,31 +180,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  headerGradient: {
+    paddingTop: 60,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    alignItems: "center",
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
+  },
+  headerTitle: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: colors.onPrimary,
+    textAlign: "center",
+    marginTop: spacing.md,
+  },
+  headerSubtitle: {
+    fontSize: fontSize.md,
+    color: colors.onPrimary,
+    textAlign: "center",
+    marginTop: spacing.xs,
+    opacity: 0.9,
+  },
   contentContainer: {
     flexGrow: 1,
     padding: spacing.lg,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-    marginTop: spacing.lg,
-  },
-  welcomeText: {
-    fontSize: fontSize.lg,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  clinicName: {
-    fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
+  formContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginTop: -spacing.xl,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   clinicCard: {
     marginBottom: spacing.lg,

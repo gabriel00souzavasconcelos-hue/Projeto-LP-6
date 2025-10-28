@@ -284,17 +284,6 @@ export default function BookAppointmentScreen({ route, navigation }: Props) {
       </View>
 
       <View style={styles.buttonContainer}>
-        {/* Debug Info */}
-        <View style={{ backgroundColor: '#f0f0f0', padding: 10, marginBottom: 10, borderRadius: 8 }}>
-          <Text style={{ fontSize: 12, marginBottom: 5 }}>🔍 Debug:</Text>
-          <Text style={{ fontSize: 11 }}>Especialização: {selectedSpecialization ? '✅' : '❌'}</Text>
-          <Text style={{ fontSize: 11 }}>Data: {selectedDate ? '✅' : '❌'}</Text>
-          <Text style={{ fontSize: 11 }}>Slot: {selectedSlot ? '✅ ' + selectedSlot : '❌'}</Text>
-          <Text style={{ fontSize: 11, fontWeight: 'bold', marginTop: 5 }}>
-            Botão: {loading || !selectedSpecialization || !selectedDate || !selectedSlot ? '🔴 DESABILITADO' : '🟢 HABILITADO'}
-          </Text>
-        </View>
-        
         <ModernButton
           title={loading ? "Agendando..." : "Confirmar Agendamento"}
           onPress={handleBookAppointment}

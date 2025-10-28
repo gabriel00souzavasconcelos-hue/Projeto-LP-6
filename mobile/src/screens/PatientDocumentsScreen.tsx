@@ -212,25 +212,27 @@ export default function PatientDocumentsScreen({ route }: Props) {
 
       {/* This wrapper View is crucial for the layout */}
       <View style={{ flex: 1 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterContainer}>
-          <TouchableOpacity
-            style={[styles.filterChip, filter === "all" && styles.filterChipActive]}
-            onPress={() => setFilter("all")}
-          >
-            <Text style={[styles.filterText, filter === "all" && styles.filterTextActive]}>Todos</Text>
-          </TouchableOpacity>
-          {documentTypes.map((docType) => (
+        <View style={styles.filterContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <TouchableOpacity
-              key={docType.type}
-              style={[styles.filterChip, filter === docType.type && styles.filterChipActive]}
-              onPress={() => setFilter(docType.type)}
+              style={[styles.filterChip, filter === "all" && styles.filterChipActive]}
+              onPress={() => setFilter("all")}
             >
-              <Text style={[styles.filterText, filter === docType.type && styles.filterTextActive]}>
-                {docType.label}
-              </Text>
+              <Text style={[styles.filterText, filter === "all" && styles.filterTextActive]}>Todos</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+            {documentTypes.map((docType) => (
+              <TouchableOpacity
+                key={docType.type}
+                style={[styles.filterChip, filter === docType.type && styles.filterChipActive]}
+                onPress={() => setFilter(docType.type)}
+              >
+                <Text style={[styles.filterText, filter === docType.type && styles.filterTextActive]}>
+                  {docType.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
         <FlatList
           style={{ flex: 1 }} // This flex: 1 is also crucial
@@ -285,35 +287,41 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   filterContainer: {
-    paddingVertical: spacing.md,
+    flexDirection: "row",
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   filterChip: {
-    paddingHorizontal: spacing.sm, // Reduced from md
-    paddingVertical: spacing.xs,   // Reduced from sm
-    borderRadius: borderRadius.round,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    height: 28,
+    borderRadius: borderRadius.sm,
     backgroundColor: colors.surface,
-    marginRight: spacing.sm,
+    marginRight: spacing.xs,
     borderWidth: 1,
     borderColor: colors.border,
-    justifyContent: 'center', // Align text vertically
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   filterChipActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   filterText: {
-    fontSize: fontSize.sm, // Reverted to sm
+    fontSize: 11,
     fontWeight: fontWeight.medium,
     color: colors.text,
+    lineHeight: 14,
   },
   filterTextActive: {
     color: colors.onPrimary,
   },
   listContentContainer: {
     flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl, // Add padding for FAB
+    padding: spacing.lg,
   },
   emptyContainer: {
     alignItems: "center",
