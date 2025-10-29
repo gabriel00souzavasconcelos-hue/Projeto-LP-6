@@ -3,22 +3,15 @@
     "expo-font"
   ],
   "extra": {
-    "eas": {
-      "projectId": "3d9095d6-a141-4a5c-a6f4-9043d3961bc7"
-    }
+    "eas": {}
   },
   "expo": {
     "name": "Gerenciamento de Clínicas",
-    "slug": "gerenciamento-clinicas",
+    "slug": "clinica-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],

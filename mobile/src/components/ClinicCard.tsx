@@ -10,7 +10,7 @@ type Props = {
 };
 
 export default function ClinicCard({ clinic, onPress }: Props) {
-  const placeholderImage = require('../../assets/clinic-placeholder.jpg');
+  const placeholderImage = require('../../assets/appstore.png');
   const imageSource = clinic.imagem ? { uri: clinic.imagem } : placeholderImage;
 
   return (

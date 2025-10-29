@@ -69,7 +69,7 @@ export default function ClinicDetailsScreen({ route, navigation }: Props) {
       >
         <View style={styles.headerContent}>
           <Image
-            source={clinic.imagem ? { uri: clinic.imagem } : require('../../assets/clinic-placeholder.jpg')}
+            source={clinic.imagem ? { uri: clinic.imagem } : require('../../assets/appstore.png')}
             style={styles.clinicImage}
           />
           <Text style={styles.clinicName}>{clinic.nome}</Text>

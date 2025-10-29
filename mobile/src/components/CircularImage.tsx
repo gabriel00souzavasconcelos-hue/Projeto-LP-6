@@ -30,7 +30,7 @@ export default function CircularImage({
   const content = (
     <View style={[styles.container, imageStyle, style]}>
       <Image
-        source={uri ? { uri } : (placeholder || require('../../assets/clinic-placeholder.jpg'))}
+        source={uri ? { uri } : (placeholder || require('../../assets/appstore.png'))}
         style={[styles.image, imageStyle]}
         resizeMode="contain"
       />
