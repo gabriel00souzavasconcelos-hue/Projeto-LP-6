@@ -32,7 +32,7 @@ export default function CircularImage({
       <Image
         source={uri ? { uri } : (placeholder || require('../../assets/clinic-placeholder.jpg'))}
         style={[styles.image, imageStyle]}
-        resizeMode="cover"
+        resizeMode="contain"
       />
       
       {loading && (
