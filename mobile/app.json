@@ -1,10 +1,4 @@
 {
-  "plugins": [
-    "expo-font"
-  ],
-  "extra": {
-    "eas": {}
-  },
   "expo": {
     "name": "Gerenciamento de Clínicas",
     "slug": "clinica-app",
@@ -15,9 +9,6 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "package": "com.mareles.gerenciamentoclinicas",
       "versionCode": 1,
@@ -33,12 +24,6 @@
         "backgroundColor": "#FFFFFF"
       }
     },
-    "web": {},
-    "scheme": "gerenciamento-clinicas",
-    "extra": {
-      "eas": {
-        "projectId": "3d9095d6-a141-4a5c-a6f4-9043d3961bc7"
-      }
-    }
+    "scheme": "gerenciamento-clinicas"
   }
 }
