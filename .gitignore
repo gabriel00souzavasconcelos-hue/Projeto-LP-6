@@ -45,6 +45,10 @@ yarn.lock
 */yarn.lock
 **/.package-lock.json
 
+# Expo
+.expo/
+.expo-shared/
+
 # Compiled TypeScript
 dist/
 build/
