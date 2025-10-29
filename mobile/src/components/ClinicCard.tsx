@@ -15,7 +15,7 @@ export default function ClinicCard({ clinic, onPress }: Props) {
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
-      <Image source={imageSource} style={styles.image} resizeMode="cover" />
+      <Image source={imageSource} style={styles.image} resizeMode="contain" />
       
       <View style={styles.infoContainer}>
         <Text style={styles.name}>{clinic.nome}</Text>
@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 160,
+    backgroundColor: colors.surfaceVariant,
   },
   infoContainer: {
     padding: spacing.lg,
