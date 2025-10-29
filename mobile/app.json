@@ -8,9 +8,40 @@
     }
   },
   "expo": {
-    "android": {
-      "package": "com.mareles.clinicaapp"
+    "name": "Gerenciamento de Clínicas",
+    "slug": "gerenciamento-clinicas",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.mareles.gerenciamentoclinicas",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "backgroundColor": "#FFFFFF",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "web": {},
+    "scheme": "gerenciamento-clinicas",
     "extra": {
       "eas": {
         "projectId": "3d9095d6-a141-4a5c-a6f4-9043d3961bc7"
