@@ -2,9 +2,9 @@ name: Full Project CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, teste ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, teste ]
 
 jobs:
   backend:
@@ -38,3 +38,5 @@ jobs:
         echo "- ✅ Backend: Build successful" >> $GITHUB_STEP_SUMMARY
         echo "- ✅ Mobile: Build successful" >> $GITHUB_STEP_SUMMARY
         echo "- 🚀 Ready for deployment" >> $GITHUB_STEP_SUMMARY
+
+        

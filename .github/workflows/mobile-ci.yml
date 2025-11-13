@@ -2,14 +2,15 @@ name: Mobile CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, teste ]
     paths:
       - 'mobile/**'
       - '.github/workflows/mobile-ci.yml'
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, teste ]
     paths:
       - 'mobile/**'
+  workflow_call:
 
 jobs:
   test-and-validate:
@@ -40,6 +41,9 @@ jobs:
 
     - name: Check TypeScript types
       run: npx tsc --noEmit
+
+    - name: Run tests
+      run: npm test
 
     - name: Validate Expo config
       run: npx expo config --type public
@@ -75,7 +79,7 @@ jobs:
       run: npm ci
 
     - name: Build preview (Android APK)
-      if: secrets.EXPO_TOKEN != ''
+      if: github.event_name == 'push'
       run: |
         echo "Building Android preview..."
         # Uncomment when ready to build
@@ -83,7 +87,7 @@ jobs:
       continue-on-error: true
 
     - name: Build preview (iOS)
-      if: secrets.EXPO_TOKEN != ''
+      if: github.event_name == 'push'
       run: |
         echo "Building iOS preview..."
         # Uncomment when ready to build
