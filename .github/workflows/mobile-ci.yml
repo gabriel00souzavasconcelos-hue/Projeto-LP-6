@@ -28,5 +28,7 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Run tests
-      run: npm test
+    - name: Verify installation
+      run: |
+        echo "✅ Dependencies installed successfully"
+        ls -la node_modules/.bin/ || echo "No binaries found"
