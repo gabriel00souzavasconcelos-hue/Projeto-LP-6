@@ -67,24 +67,24 @@ Nossa aplicação resolve esses problemas através de um sistema integrado e mod
 <div align="center">
 
 #### **Tela de Login**
-<img src="./assets/screenshots/bemvindo.jpeg" alt="Tela de Login" width="300"> 
 <br>*Sistema de autenticação dual com seleção de perfil (Paciente/Clínica)*<br>
-
+<img src="./assets/screenshots/bemvindo.jpeg" alt="Tela de Login" width="300"> 
+<br><br>
 #### **Lista de Clínicas Disponíveis**
-<img src="./assets/screenshots/listaclinica.jpeg" alt="Lista de Clínicas" width="300"> 
 <br>*Busca inteligente com filtros por especialização médica*<br>
-
+<img src="./assets/screenshots/listaclinica.jpeg" alt="Lista de Clínicas" width="300"> 
+<br><br>
 #### **Menu de Gerenciamento da Clínica**
-<img src="./assets/screenshots/painelclinica.jpeg" alt="Menu da Clínica" width="300">
 <br>*Painel administrativo completo para clínicas médicas*<br>
-
+<img src="./assets/screenshots/painelclinica.jpeg" alt="Menu da Clínica" width="300">
+<br><br>
 #### **Cadastro de Paciente**
-<img src="./assets/screenshots/cadastropaciente.jpeg" alt="Cadastro de Paciente" width="300">
 <br>*Formulário completo com validação de dados e formatação automática*<br>
-
+<img src="./assets/screenshots/cadastropaciente.jpeg" alt="Cadastro de Paciente" width="300">
+<br><br>
 #### **Cadastro de Clínica**
-<img src="./assets/screenshots/cadastroclinica.jpeg" alt="Cadastro de Clínica" width="300">
 <br>*Sistema de registro com upload de imagem e dados institucionais*<br>
+<img src="./assets/screenshots/cadastroclinica.jpeg" alt="Cadastro de Clínica" width="300">
 
 </div>
 
