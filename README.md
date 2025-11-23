@@ -68,23 +68,23 @@ Nossa aplicação resolve esses problemas através de um sistema integrado e mod
 
 #### **Tela de Login**
 <img src="./assets/screenshots/bemvindo.jpeg" alt="Tela de Login" width="300"> 
-*Sistema de autenticação dual com seleção de perfil (Paciente/Clínica)*
+<br>*Sistema de autenticação dual com seleção de perfil (Paciente/Clínica)*<br>
 
 #### **Lista de Clínicas Disponíveis**
 <img src="./assets/screenshots/listaclinica.jpeg" alt="Lista de Clínicas" width="300"> 
-*Busca inteligente com filtros por especialização médica*
+<br>*Busca inteligente com filtros por especialização médica*<br>
 
 #### **Menu de Gerenciamento da Clínica**
 <img src="./assets/screenshots/painelclinica.jpeg" alt="Menu da Clínica" width="300">
-*Painel administrativo completo para clínicas médicas*
+<br>*Painel administrativo completo para clínicas médicas*<br>
 
 #### **Cadastro de Paciente**
 <img src="./assets/screenshots/cadastropaciente.jpeg" alt="Cadastro de Paciente" width="300">
-*Formulário completo com validação de dados e formatação automática*
+<br>*Formulário completo com validação de dados e formatação automática*<br>
 
 #### **Cadastro de Clínica**
 <img src="./assets/screenshots/cadastroclinica.jpeg" alt="Cadastro de Clínica" width="300">
-*Sistema de registro com upload de imagem e dados institucionais*
+<br>*Sistema de registro com upload de imagem e dados institucionais*<br>
 
 </div>
 
