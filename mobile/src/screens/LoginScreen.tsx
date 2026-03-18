@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,6 +23,7 @@ import {
   borderRadius,
 } from "../styles/theme";
 import { authLogin } from "../api/client";
+import { useClinic } from "../contexts/ClinicContexts"; 
 
 type Props = {
   navigation: any;
@@ -31,6 +33,9 @@ export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [role, setRole] = useState<"paciente" | "clinica">("paciente");
+  const [loading, setLoading] = useState(false);
+
+  const { loadClinicSession } = useClinic();
 
   async function handleLogin() {
     if (!email || !senha) {
@@ -38,20 +43,23 @@ export default function LoginScreen({ navigation }: Props) {
       return;
     }
 
+    setLoading(true);
+
     try {
       const resp = await authLogin(email, senha, role);
-      console.log('Login response:', resp); // Debug
-      
+
       if (!resp?.user) {
         Alert.alert("Erro de Login", "Credenciais inválidas. Tente novamente.");
         return;
       }
 
-      console.log('User data:', resp.user); // Debug
-      
       if (role === "paciente") {
         navigation.replace("PatientMenu", { patient: resp.user });
       } else {
+        // Carrega add-ons no contexto global — uma única chamada à API,
+        // depois hasAddon() funciona em qualquer tela sem novo request.
+        const token = resp.session?.access_token ?? resp.token ?? "";
+        await loadClinicSession(resp.user, token);
         navigation.replace("ClinicMenu", { clinic: resp.user });
       }
     } catch (err: any) {
@@ -60,6 +68,8 @@ export default function LoginScreen({ navigation }: Props) {
         err?.response?.data?.error ||
         "Não foi possível fazer o login. Verifique sua conexão e credenciais.";
       Alert.alert("Erro", errorMessage);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -74,6 +84,7 @@ export default function LoginScreen({ navigation }: Props) {
         <Text style={styles.title}>Bem-vindo!</Text>
         <Text style={styles.subtitle}>Acesse sua conta para continuar</Text>
       </LinearGradient>
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -100,6 +111,7 @@ export default function LoginScreen({ navigation }: Props) {
                   👤 Sou Paciente
                 </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={[
                   styles.roleButton,
@@ -125,7 +137,9 @@ export default function LoginScreen({ navigation }: Props) {
               placeholder="seuemail@exemplo.com"
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
               icon="mail-outline"
+              editable={!loading}
             />
 
             <ModernInput
@@ -135,27 +149,39 @@ export default function LoginScreen({ navigation }: Props) {
               placeholder="Sua senha"
               secureTextEntry
               icon="lock-closed-outline"
+              editable={!loading}
             />
 
-            <ModernButton
-              title="Entrar"
-              onPress={handleLogin}
-              variant="primary"
-              size="large"
-              fullWidth
-              style={styles.loginButton}
-            />
+            {loading ? (
+              <View style={styles.loadingButton}>
+                <ActivityIndicator color={colors.onPrimary} />
+                <Text style={styles.loadingText}>
+                  {role === "clinica" ? "Carregando seu perfil..." : "Entrando..."}
+                </Text>
+              </View>
+            ) : (
+              <ModernButton
+                title="Entrar"
+                onPress={handleLogin}
+                variant="primary"
+                size="large"
+                fullWidth
+                style={styles.loginButton}
+              />
+            )}
           </View>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Não tem uma conta?</Text>
             <TouchableOpacity
               onPress={() => navigation.navigate("RegisterPatient")}
+              disabled={loading}
             >
               <Text style={styles.linkText}>Cadastre-se como Paciente</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => navigation.navigate("RegisterClinic")}
+              disabled={loading}
             >
               <Text style={styles.linkText}>Cadastre-se como Clínica</Text>
             </TouchableOpacity>
@@ -168,6 +194,7 @@ export default function LoginScreen({ navigation }: Props) {
               variant="ghost"
               size="medium"
               fullWidth
+              disabled={loading}
             />
           </View>
         </ScrollView>
@@ -186,7 +213,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: spacing.lg,
     paddingTop: spacing.xxl,
-    paddingBottom: spacing.lg, // No extra padding
+    paddingBottom: spacing.lg,
     borderBottomLeftRadius: borderRadius.xl,
     borderBottomRightRadius: borderRadius.xl,
   },
@@ -212,7 +239,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
     marginBottom: spacing.xl,
-    // No more negative margin
     ...Platform.select({
       ios: {
         shadowColor: colors.shadow,
@@ -264,6 +290,22 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     marginTop: spacing.md,
+  },
+  loadingButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    minHeight: 56,
+    marginTop: spacing.md,
+    opacity: 0.85,
+  },
+  loadingText: {
+    color: colors.onPrimary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
   },
   footer: {
     alignItems: "center",

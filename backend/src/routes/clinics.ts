@@ -1,7 +1,19 @@
 import { Router } from 'express';
 import { clinicController } from '../controllers/clinicController';
+import { authenticate, requireClinica } from '../middlewares/authMiddleware';
+
 
 const router = Router();
+
+
+// Rota pública — sem autenticação
+router.get('/', clinicController.getAllClinics.bind(clinicController));
+
+
+// Rotas privadas — exige JWT válido + ser clínica
+router.put('/:codigo', authenticate, requireClinica, clinicController.updateClinic.bind(clinicController));
+router.delete('/:codigo', authenticate, requireClinica, clinicController.deleteClinic.bind(clinicController));
+
 
 router.get('/', clinicController.getAllClinics.bind(clinicController));
 router.get('/:codigo', clinicController.getClinicById.bind(clinicController));

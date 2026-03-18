@@ -1,13 +1,14 @@
-import React from "react";
-import RootNavigator from "./src/navigation/RootNavigator";
-
-const NavigationLibrary = require("@react-navigation/native");
-const NavigationContainer = NavigationLibrary.NavigationContainer;
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import RootNavigator from './src/navigation/RootNavigator';
+import { ClinicProvider } from './src/contexts/ClinicContexts';
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <RootNavigator />
-    </NavigationContainer>
+    <ClinicProvider>
+      <NavigationContainer>
+        <RootNavigator />
+      </NavigationContainer>
+    </ClinicProvider>
   );
 }
