@@ -15,28 +15,54 @@ export class AuthService {
   async login(loginData: LoginData) {
     const { email, senha, role } = loginData;
 
-    if (!email || !senha || (role !== 'paciente' && role !== 'clinica')) {
+    if (!email || !senha || !['paciente', 'clinica'].includes(role)) {
       throw new Error('Dados de login inválidos');
     }
 
-    const table = role === 'paciente' ? 'pacientes' : 'clinicas';
-    const { data, error } = await supabase
-      .from(table)
-      .select('*')
-      .eq('email', email)
-      .eq('senha', senha)
-      .limit(1)
-      .single();
+    // 1. Autentica via Supabase Auth — gera o JWT real
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha,
+    });
 
-    if (error) {
+    if (authError || !authData.user) {
       throw new Error('Credenciais inválidas');
     }
 
-    // Remove senha antes de retornar
-    const safeUser = { ...data };
+    // 2. Verifica se o role bate com o cadastro
+    const storedRole = authData.user.user_metadata?.role as string | undefined;
+
+    // Se o usuário foi cadastrado com role nos metadados, valida
+    if (storedRole && storedRole !== role) {
+      await supabase.auth.signOut();
+      throw new Error(`Credenciais inválidas`);
+    }
+
+    // 3. Busca os dados completos na tabela correspondente
+    const table = role === 'paciente' ? 'pacientes' : 'clinicas';
+    const { data: entity, error: entityError } = await supabase
+      .from(table)
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (entityError || !entity) {
+      throw new Error('Credenciais inválidas');
+    }
+
+    // 4. Remove senha antes de retornar
+    const safeUser = { ...entity };
     delete (safeUser as any).senha;
 
-    return safeUser;
+    return {
+      user: safeUser,
+      // session contém o access_token JWT que o frontend vai usar
+      session: {
+        access_token: authData.session?.access_token ?? '',
+        refresh_token: authData.session?.refresh_token ?? '',
+        expires_in: authData.session?.expires_in ?? 3600,
+      },
+    };
   }
 
   async register(registerData: RegisterData) {
@@ -46,21 +72,55 @@ export class AuthService {
       throw new Error('Dados inválidos');
     }
 
+    const { nome, email, senha, ...rest } = payload;
+
+    if (!email || !senha) {
+      throw new Error('Email e senha são obrigatórios');
+    }
+
+    // 1. Cria o usuário no Supabase Auth com o role nos metadados
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password: senha,
+      options: {
+        data: {
+          role,      // salvo nos user_metadata para o middleware poder ler
+          nome,
+        },
+      },
+    });
+
+    if (authError) {
+      throw new Error(authError.message);
+    }
+
+    // 2. Insere na tabela de domínio (pacientes ou clinicas)
     const table = role === 'paciente' ? 'pacientes' : 'clinicas';
-    const { data, error } = await supabase
+    const { data: entity, error: entityError } = await supabase
       .from(table)
-      .insert(payload)
+      .insert({ nome, email, senha, ...rest })
       .select()
       .single();
 
-    if (error) {
-      throw new Error(error.message);
+    if (entityError) {
+      // Rollback: remove o usuário do Auth se falhar na tabela
+      if (authData.user) {
+        await supabase.auth.admin?.deleteUser(authData.user.id).catch(() => {});
+      }
+      throw new Error(entityError.message);
     }
 
-    const safeUser = { ...data };
+    const safeUser = { ...entity };
     delete (safeUser as any).senha;
 
-    return safeUser;
+    return {
+      user: safeUser,
+      session: authData.session ? {
+        access_token: authData.session.access_token,
+        refresh_token: authData.session.refresh_token,
+        expires_in: authData.session.expires_in,
+      } : null,
+    };
   }
 }
 

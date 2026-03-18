@@ -1,29 +1,20 @@
 import { Router } from 'express';
 import * as documentController from '../controllers/documentController';
+import { authenticate } from '../middlewares/authMiddleware';
 
 const router = Router();
 
-// IMPORTANTE: Rotas específicas devem vir ANTES das rotas com parâmetros genéricos
+// IMPORTANTE: rotas específicas ANTES das com parâmetros genéricos
 
-// Buscar documentos por paciente
-router.get('/patient/:codigo_paciente', documentController.getDocumentsByPatient);
+// Todas as rotas de documentos exigem token —
+// documentos médicos são sempre dados sensíveis
+router.get('/patient/:codigo_paciente',                          authenticate, documentController.getDocumentsByPatient);
+router.get('/clinic/:codigo_clinica',                            authenticate, documentController.getDocumentsByClinic);
+router.get('/patient/:codigo_paciente/clinic/:codigo_clinica',   authenticate, documentController.getDocumentsByPatientAndClinic);
+router.get('/:codigo',                                           authenticate, documentController.getDocumentById);
 
-// Buscar documentos por clínica
-router.get('/clinic/:codigo_clinica', documentController.getDocumentsByClinic);
-
-// Buscar documentos por paciente e clínica específica
-router.get('/patient/:codigo_paciente/clinic/:codigo_clinica', documentController.getDocumentsByPatientAndClinic);
-
-// Criar novo documento
-router.post('/', documentController.createDocument);
-
-// Buscar documento por ID
-router.get('/:codigo', documentController.getDocumentById);
-
-// Atualizar documento
-router.put('/:codigo', documentController.updateDocument);
-
-// Excluir documento
-router.delete('/:codigo', documentController.deleteDocument);
+router.post('/',          authenticate, documentController.createDocument);
+router.put('/:codigo',    authenticate, documentController.updateDocument);
+router.delete('/:codigo', authenticate, documentController.deleteDocument);
 
 export default router;

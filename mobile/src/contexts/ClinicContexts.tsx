@@ -7,11 +7,7 @@ import React, {
   ReactNode,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE_URL } from '../api/client';
-
-// ============================================================
-// TIPOS
-// ============================================================
+import { BASE_URL, getStoredToken } from '../api/client';
 
 export type Plano = 'basico' | 'profissional' | 'enterprise';
 
@@ -32,69 +28,40 @@ export interface ClinicSubscription {
 
 interface ClinicContextData {
   clinic: any | null;
-  token: string | null;
   subscription: ClinicSubscription | null;
   loading: boolean;
-
-  // Verifica add-on sem request — lê do estado local
   hasAddon: (addon: keyof ClinicAddons) => boolean;
-
-  // Chamado no login
   loadClinicSession: (clinicData: any, accessToken: string) => Promise<void>;
-
-  // Recarrega do servidor (ex: após upgrade de plano)
   refreshSubscription: () => Promise<void>;
-
-  // Ativa trial de 14 dias
   startTrial: () => Promise<{ success: boolean; message: string }>;
-
   clearSession: () => void;
 }
 
-// ============================================================
-// DEFAULTS
-// ============================================================
-
 const SUBSCRIPTION_STORAGE_KEY = '@clinica:subscription';
-const TOKEN_STORAGE_KEY = '@clinica:token';
 
 const DEFAULT_SUBSCRIPTION: ClinicSubscription = {
   plano: 'basico',
-  addons: {
-    addon_telemedicina: false,
-    addon_pdf: false,
-    addon_relatorios: false,
-    addon_api_externa: false,
-  },
+  addons: { addon_telemedicina: false, addon_pdf: false, addon_relatorios: false, addon_api_externa: false },
   trial_ativo: false,
   trial_expira_em: null,
 };
-
-// ============================================================
-// CONTEXT
-// ============================================================
 
 const ClinicContext = createContext<ClinicContextData>({} as ClinicContextData);
 
 export function ClinicProvider({ children }: { children: ReactNode }) {
   const [clinic, setClinic] = useState<any | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<ClinicSubscription | null>(null);
   const [loading, setLoading] = useState(false);
+  const clinicIdRef = useRef<number | null>(null);
 
-  // Guarda token em ref para usar nos fetches sem depender do estado
-  const tokenRef = useRef<string | null>(null);
-
-  // ============================================================
-  // FETCH DA ASSINATURA (único ponto de busca)
-  // ============================================================
-  const fetchSubscription = useCallback(async (
-    clinicaId: number,
-    accessToken: string
-  ): Promise<ClinicSubscription> => {
+  const fetchSubscription = useCallback(async (): Promise<ClinicSubscription> => {
     try {
+      // Pega o token do AsyncStorage (salvo pelo authLogin no client.ts)
+      const token = await getStoredToken();
+      if (!token) throw new Error('Sem token');
+
       const response = await fetch(`${BASE_URL}/addons/subscription`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) throw new Error('Falha ao buscar assinatura');
@@ -114,81 +81,53 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
         trial_expired: data.trial_expired ?? false,
       };
 
-      // Persiste localmente para restaurar offline
       await AsyncStorage.setItem(SUBSCRIPTION_STORAGE_KEY, JSON.stringify(parsed));
-
       return parsed;
     } catch {
-      // Fallback: tenta restaurar do AsyncStorage se offline
       const cached = await AsyncStorage.getItem(SUBSCRIPTION_STORAGE_KEY);
       if (cached) return JSON.parse(cached) as ClinicSubscription;
       return DEFAULT_SUBSCRIPTION;
     }
   }, []);
 
-  // ============================================================
-  // loadClinicSession — chamado no login
-  // ============================================================
-  const loadClinicSession = useCallback(async (
-    clinicData: any,
-    accessToken: string
-  ) => {
+  // Chamado no LoginScreen após authLogin bem-sucedido
+  // accessToken já foi salvo pelo client.ts — passamos só para conveniência
+  const loadClinicSession = useCallback(async (clinicData: any, _accessToken: string) => {
     setLoading(true);
     setClinic(clinicData);
-    setToken(accessToken);
-    tokenRef.current = accessToken;
+    clinicIdRef.current = clinicData.codigo;
 
-    // Persiste token para restaurar sessão após fechar o app
-    await AsyncStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
-
-    const sub = await fetchSubscription(clinicData.codigo, accessToken);
+    const sub = await fetchSubscription();
     setSubscription(sub);
     setLoading(false);
   }, [fetchSubscription]);
 
-  // ============================================================
-  // refreshSubscription — após upgrade ou mudança de add-on
-  // ============================================================
   const refreshSubscription = useCallback(async () => {
-    if (!clinic?.codigo || !tokenRef.current) return;
+    if (!clinicIdRef.current) return;
     setLoading(true);
-    const sub = await fetchSubscription(clinic.codigo, tokenRef.current);
+    const sub = await fetchSubscription();
     setSubscription(sub);
     setLoading(false);
-  }, [clinic, fetchSubscription]);
+  }, [fetchSubscription]);
 
-  // ============================================================
-  // startTrial — auto-serviço de trial
-  // ============================================================
-  const startTrial = useCallback(async (): Promise<{
-    success: boolean;
-    message: string;
-  }> => {
-    if (!tokenRef.current) return { success: false, message: 'Não autenticado.' };
-
+  const startTrial = useCallback(async (): Promise<{ success: boolean; message: string }> => {
     try {
+      const token = await getStoredToken();
+      if (!token) return { success: false, message: 'Não autenticado.' };
+
       const response = await fetch(`${BASE_URL}/addons/trial`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${tokenRef.current}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // Atualiza contexto local imediatamente sem esperar refresh
         setSubscription(prev => prev ? {
           ...prev,
           trial_ativo: true,
-          addons: {
-            ...prev.addons,
-            addon_telemedicina: true,
-            addon_pdf: true,
-          },
+          addons: { ...prev.addons, addon_telemedicina: true, addon_pdf: true },
         } : prev);
-
         return { success: true, message: data.message };
       }
 
@@ -198,36 +137,20 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // ============================================================
-  // hasAddon — sem request, lê do estado
-  // ============================================================
   const hasAddon = useCallback((addon: keyof ClinicAddons): boolean => {
     return subscription?.addons[addon] ?? false;
   }, [subscription]);
 
-  // ============================================================
-  // clearSession — logout
-  // ============================================================
   const clearSession = useCallback(async () => {
     setClinic(null);
-    setToken(null);
     setSubscription(null);
-    tokenRef.current = null;
-    await AsyncStorage.multiRemove([SUBSCRIPTION_STORAGE_KEY, TOKEN_STORAGE_KEY]);
+    clinicIdRef.current = null;
+    await AsyncStorage.removeItem(SUBSCRIPTION_STORAGE_KEY);
+    // O token é removido pelo authLogout() no client.ts — chamado no logout do ClinicMenu
   }, []);
 
   return (
-    <ClinicContext.Provider value={{
-      clinic,
-      token,
-      subscription,
-      loading,
-      hasAddon,
-      loadClinicSession,
-      refreshSubscription,
-      startTrial,
-      clearSession,
-    }}>
+    <ClinicContext.Provider value={{ clinic, subscription, loading, hasAddon, loadClinicSession, refreshSubscription, startTrial, clearSession }}>
       {children}
     </ClinicContext.Provider>
   );
@@ -235,8 +158,6 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
 
 export function useClinic() {
   const context = useContext(ClinicContext);
-  if (!context) {
-    throw new Error('useClinic deve ser usado dentro de <ClinicProvider>');
-  }
+  if (!context) throw new Error('useClinic deve ser usado dentro de <ClinicProvider>');
   return context;
 }

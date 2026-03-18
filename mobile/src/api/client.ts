@@ -1,68 +1,111 @@
 import { Clinic, Patient, Specialization, Appointment, AppointmentWithDetails, AppointmentStatus, Document, DocumentWithDetails } from "../types";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const BASE_URL = "https://projeto-lp-6.onrender.com";
+
+const TOKEN_KEY = '@clinica:token';
 
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: 30000,
 });
 
-// Add request interceptor for debugging
-api.interceptors.request.use(request => {
-  console.log('Starting Request:', request.method?.toUpperCase(), request.url);
+// ============================================================
+// Injeta o token JWT em TODOS os requests automaticamente
+// ============================================================
+api.interceptors.request.use(async (request) => {
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  if (token) {
+    request.headers.Authorization = `Bearer ${token}`;
+  }
+  console.log('Request:', request.method?.toUpperCase(), request.url);
   return request;
 });
 
-// Add response interceptor for debugging
 api.interceptors.response.use(
-  response => {
+  (response) => {
     console.log('Response:', response.status, response.config.url);
     return response;
   },
-  error => {
+  (error) => {
     console.log('Request failed:', error.config?.url, error.message);
     return Promise.reject(error);
   }
 );
 
-// Image upload utility
+// ============================================================
+// Helpers de token
+// ============================================================
+export async function saveToken(token: string): Promise<void> {
+  await AsyncStorage.setItem(TOKEN_KEY, token);
+}
+
+export async function clearToken(): Promise<void> {
+  await AsyncStorage.removeItem(TOKEN_KEY);
+}
+
+export async function getStoredToken(): Promise<string | null> {
+  return AsyncStorage.getItem(TOKEN_KEY);
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+export async function authLogin(email: string, senha: string, role: "paciente" | "clinica") {
+  const res = await api.post("/auth/login", { email, senha, role });
+  const data = res.data;
+
+  // Salva o JWT automaticamente para os próximos requests
+  if (data?.session?.access_token) {
+    await saveToken(data.session.access_token);
+  }
+
+  return data; // { user, session }
+}
+
+export async function authRegister(role: "paciente" | "clinica", payload: any) {
+  const res = await api.post("/auth/register", { role, payload });
+  const data = res.data;
+
+  // Salva o JWT se o register retornar sessão
+  if (data?.session?.access_token) {
+    await saveToken(data.session.access_token);
+  }
+
+  return data; // { user, session }
+}
+
+export async function authLogout(): Promise<void> {
+  await clearToken();
+}
+
+// ============================================================
+// IMAGE UPLOAD
+// ============================================================
 export async function uploadImage(imageUri: string) {
   const formData = new FormData();
   const filename = imageUri.split('/').pop() || 'image.jpg';
   const match = /\.(\w+)$/.exec(filename);
   const type = match ? `image/${match[1]}` : 'image/jpeg';
 
-  formData.append('image', {
-    uri: imageUri,
-    name: filename,
-    type,
-  } as any);
+  formData.append('image', { uri: imageUri, name: filename, type } as any);
 
   const response = await api.post('/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
-  
+
   return response.data.imageUrl;
 }
 
-export async function authLogin(email: string, senha: string, role: "paciente" | "clinica") {
-  const res = await api.post("/auth/login", { email, senha, role });
-  return res.data; 
-}
-
-export async function authRegister(role: "paciente" | "clinica", payload: any) {
-  const res = await api.post("/auth/register", { role, payload });
-  return res.data;
-}
-
-
+// ============================================================
+// PATIENTS
+// ============================================================
 export async function createPatient(payload: Omit<Patient, "codigo">) {
   const res = await api.post("/patients", payload);
   return res.data;
 }
+
 export async function getPatient(id: number) {
   const res = await api.get(`/patients/${id}`);
   return res.data as Patient;
@@ -73,27 +116,34 @@ export async function updatePatient(id: number, payload: Partial<Omit<Patient, "
   return res.data as Patient;
 }
 
-
+// ============================================================
+// CLINICS
+// ============================================================
 export async function createClinic(payload: Omit<Clinic, "codigo">) {
   const res = await api.post("/clinics", payload);
   return res.data;
 }
+
 export async function getClinics(specialization?: string) {
   const params: any = {};
-  if (specialization) params.specialization = specialization; 
+  if (specialization) params.specialization = specialization;
   const res = await api.get("/clinics", { params });
   return res.data as Clinic[];
 }
+
 export async function getClinicById(id: number) {
   const res = await api.get(`/clinics/${id}`);
   return res.data as Clinic;
 }
+
 export async function updateClinic(id: number, payload: Partial<Clinic>) {
   const res = await api.put(`/clinics/${id}`, payload);
   return res.data;
 }
 
-
+// ============================================================
+// SPECIALIZATIONS
+// ============================================================
 export async function getSpecializations() {
   const res = await api.get("/specializations");
   return res.data as Specialization[];
@@ -110,23 +160,23 @@ export async function getClinicSpecializations(clinicCode: number) {
 }
 
 export async function addSpecializationToClinic(clinicCode: number, specializationName: string) {
-  // First find the specialization by name
   const specializations = await getSpecializations();
   const specialization = specializations.find(s => s.nome === specializationName);
-  if (!specialization) {
-    throw new Error('Especialização não encontrada');
-  }
-  
-  const res = await api.post(`/clinics/${clinicCode}/specializations`, { 
-    codigo_especializacao: specialization.codigo 
-  });
+  if (!specialization) throw new Error('Especialização não encontrada');
+  const res = await api.post(`/clinics/${clinicCode}/specializations`, { codigo_especializacao: specialization.codigo });
   return res.data;
 }
 
-// Função para buscar pacientes de uma clínica específica
+export async function removeSpecializationFromClinic(clinicCode: number, specializationName: string) {
+  const specializations = await getSpecializations();
+  const specialization = specializations.find(s => s.nome === specializationName);
+  if (!specialization) throw new Error('Especialização não encontrada');
+  const res = await api.delete(`/clinics/${clinicCode}/specializations/${specialization.codigo}`);
+  return res.data;
+}
+
 export async function getClinicPatients(clinicCode: number) {
   const res = await api.get(`/appointments/clinic/${clinicCode}`);
-  // Extrair pacientes únicos dos appointments
   const appointments = res.data as AppointmentWithDetails[];
   const uniquePatients = appointments.reduce((acc, appointment) => {
     if (!acc.find(p => p.codigo === appointment.codigo_paciente)) {
@@ -134,7 +184,6 @@ export async function getClinicPatients(clinicCode: number) {
         codigo: appointment.codigo_paciente,
         nome: appointment.paciente_nome || '',
         email: appointment.paciente_email || '',
-        // Usar valores padrão para os campos obrigatórios que não estão disponíveis
         datan: '',
         fone: '',
         ende: '',
@@ -145,20 +194,9 @@ export async function getClinicPatients(clinicCode: number) {
   return uniquePatients;
 }
 
-export async function removeSpecializationFromClinic(clinicCode: number, specializationName: string) {
-  // First find the specialization by name
-  const specializations = await getSpecializations();
-  const specialization = specializations.find(s => s.nome === specializationName);
-  if (!specialization) {
-    throw new Error('Especialização não encontrada');
-  }
-  
-  const res = await api.delete(`/clinics/${clinicCode}/specializations/${specialization.codigo}`);
-  return res.data;
-}
-
-// ============ APPOINTMENTS API ============
-
+// ============================================================
+// APPOINTMENTS
+// ============================================================
 export async function createAppointment(appointmentData: Omit<Appointment, 'codigo' | 'criado_em' | 'atualizado_em'>) {
   const res = await api.post("/appointments", appointmentData);
   return res.data as Appointment;
@@ -195,27 +233,17 @@ export async function deleteAppointment(codigo: number) {
 }
 
 export async function getAvailableSlots(codigo_clinica: number, data: string) {
-  const res = await api.get(`/appointments/slots/available`, {
-    params: { codigo_clinica, data }
-  });
+  const res = await api.get(`/appointments/slots/available`, { params: { codigo_clinica, data } });
   return res.data as string[];
 }
 
-// ============ DOCUMENTS API ============
-
+// ============================================================
+// DOCUMENTS
+// ============================================================
 export async function uploadDocument(fileUri: string, documentData: Omit<Document, 'codigo' | 'criado_em' | 'url_arquivo' | 'nome_arquivo' | 'tamanho_arquivo'>) {
-  // First upload the file
   const imageUrl = await uploadImage(fileUri);
-  
-  // Get filename and size
   const filename = fileUri.split('/').pop() || 'document';
-  
-  // Create document record
-  const res = await api.post("/documents", {
-    ...documentData,
-    url_arquivo: imageUrl,
-    nome_arquivo: filename,
-  });
+  const res = await api.post("/documents", { ...documentData, url_arquivo: imageUrl, nome_arquivo: filename });
   return res.data as Document;
 }
 
