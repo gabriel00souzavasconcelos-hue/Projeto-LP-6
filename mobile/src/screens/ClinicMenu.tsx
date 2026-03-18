@@ -6,6 +6,7 @@ import ModernButton from '../components/ModernButton';
 import ModernCard from '../components/ModernCard';
 import { PremiumActionCard, SubscriptionBanner } from '../components/PremiumGate';
 import { useClinic } from '../contexts/ClinicContexts';
+import { authLogout } from '../api/client';
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../styles/theme';
 
 type Props = {
@@ -15,10 +16,9 @@ type Props = {
 
 export default function ClinicMenu({ route, navigation }: Props) {
   const clinic = route.params?.clinic;
-  const { subscription, refreshSubscription } = useClinic();
+  const { subscription, refreshSubscription, clearSession } = useClinic();
 
   const handleUpgradePress = () => {
-    // Navegar para tela de planos ou abrir webview
     Alert.alert(
       'Upgrade de Plano',
       'Você será redirecionado para a página de planos.',
@@ -32,6 +32,12 @@ export default function ClinicMenu({ route, navigation }: Props) {
         },
       ]
     );
+  };
+
+  const handleLogout = async () => {
+    await authLogout();   // limpa o JWT do AsyncStorage
+    clearSession();       // limpa subscription e clinic do contexto
+    navigation.replace('Login');
   };
 
   return (
@@ -201,7 +207,7 @@ export default function ClinicMenu({ route, navigation }: Props) {
           <View style={styles.logoutContainer}>
             <ModernButton
               title="Sair da Conta"
-              onPress={() => navigation.replace('Login')}
+              onPress={handleLogout}
               variant="outline"
               size="medium"
               fullWidth
