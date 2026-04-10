@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
   View,
   Text,
   FlatList,
@@ -11,6 +12,10 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
+  Modal,
+  PanResponder,
+  Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,7 +33,9 @@ import { getClinics } from "../api/client";
 import { Clinic } from "../types";
 import { useSpecializations } from "../hooks/useSpecializations";
 
-const { width } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
+const SHEET_HEIGHT = height * 0.9;
+const COLLAPSED_TRANSLATE_Y = SHEET_HEIGHT * 0.42;
 
 type Props = {
   navigation: any;
@@ -40,9 +47,24 @@ export default function ClinicList({ navigation, route }: Props) {
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [filterSearchTerm, setFilterSearchTerm] = useState("");
+  const [selectedSpecializations, setSelectedSpecializations] = useState<string[]>([]);
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [specializationSearchTerm, setSpecializationSearchTerm] = useState("");
+
+  const sheetTranslateY = useRef(new Animated.Value(COLLAPSED_TRANSLATE_Y)).current;
+  const dragStartY = useRef(COLLAPSED_TRANSLATE_Y);
 
   const { specializations } = useSpecializations();
+
+  // Filtrar especialidades baseado na busca
+  const filteredSpecializations = useMemo(
+    () =>
+      specializations.filter((spec) =>
+        spec.nome.toLowerCase().includes(specializationSearchTerm.toLowerCase())
+      ),
+    [specializations, specializationSearchTerm]
+  );
 
   // Debug - verificar se patient está chegando
   useEffect(() => {
@@ -68,12 +90,24 @@ export default function ClinicList({ navigation, route }: Props) {
   const filteredClinics = useMemo(() => {
     let filtered = clinics;
 
-    if (activeFilter) {
+    // Filtro por especialidades (múltiplas)
+    if (selectedSpecializations.length > 0) {
       filtered = filtered.filter((clinic) =>
-        clinic.especializacoes?.includes(activeFilter)
+        clinic.especializacoes?.some((esp) =>
+          selectedSpecializations.includes(esp)
+        )
       );
     }
 
+    // Filtro por nome de clínica (no modal e na busca)
+    if (filterSearchTerm) {
+      const lowercasedTerm = filterSearchTerm.toLowerCase();
+      filtered = filtered.filter((clinic) =>
+        clinic.nome.toLowerCase().includes(lowercasedTerm)
+      );
+    }
+
+    // Busca geral por nome ou endereço
     if (searchTerm) {
       const lowercasedTerm = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -84,11 +118,71 @@ export default function ClinicList({ navigation, route }: Props) {
     }
 
     return filtered;
-  }, [clinics, searchTerm, activeFilter]);
+  }, [clinics, searchTerm, selectedSpecializations, filterSearchTerm]);
+
+  const toggleSpecialization = (specName: string) => {
+    setSelectedSpecializations((prev) =>
+      prev.includes(specName)
+        ? prev.filter((s) => s !== specName)
+        : [...prev, specName]
+    );
+  };
+
+  const clearAllFilters = () => {
+    setSelectedSpecializations([]);
+    setFilterSearchTerm("");
+    setSpecializationSearchTerm("");
+    setIsFilterModalVisible(false);
+  };
+
+  const openFiltersModal = () => {
+    sheetTranslateY.setValue(COLLAPSED_TRANSLATE_Y);
+    setIsFilterModalVisible(true);
+  };
+
+  const closeFiltersModal = () => {
+    setIsFilterModalVisible(false);
+  };
+
+  const snapSheet = (toValue: number) => {
+    Animated.spring(sheetTranslateY, {
+      toValue,
+      useNativeDriver: true,
+      bounciness: 0,
+      speed: 20,
+    }).start();
+  };
+
+  const handlePanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 3,
+      onPanResponderGrant: () => {
+        sheetTranslateY.stopAnimation((value) => {
+          dragStartY.current = value;
+        });
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const next = Math.min(
+          COLLAPSED_TRANSLATE_Y,
+          Math.max(0, dragStartY.current + gestureState.dy)
+        );
+        sheetTranslateY.setValue(next);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const projected = dragStartY.current + gestureState.dy;
+        const shouldExpand = gestureState.vy < -0.2 || projected < COLLAPSED_TRANSLATE_Y * 0.55;
+        snapSheet(shouldExpand ? 0 : COLLAPSED_TRANSLATE_Y);
+      },
+      onPanResponderTerminate: () => {
+        snapSheet(COLLAPSED_TRANSLATE_Y);
+      },
+    })
+  ).current;
 
   const onRefresh = () => {
     setSearchTerm("");
-    setActiveFilter(null);
+    clearAllFilters();
     fetchClinics();
   };
 
@@ -99,6 +193,163 @@ export default function ClinicList({ navigation, route }: Props) {
     />
   );
 
+  const renderFiltersModal = () => (
+    <Modal
+      visible={isFilterModalVisible}
+      animationType="fade"
+      transparent={true}
+      onRequestClose={() => {
+        closeFiltersModal();
+      }}
+    >
+      <View style={styles.modalOverlay}>
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.modalOverlayButton}
+          onPress={closeFiltersModal}
+        />
+
+        <Animated.View
+          style={[
+            styles.modalContainer,
+            {
+              transform: [{ translateY: sheetTranslateY }],
+            },
+          ]}
+        >
+          <View style={styles.dragIndicatorContainer} {...handlePanResponder.panHandlers}>
+            <View style={styles.dragIndicator} />
+          </View>
+
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={styles.modalFullContainer}
+          >
+            <View style={styles.modalHeaderSimple}>
+          <Text style={styles.modalTitle}>Filtros Avançados</Text>
+          <TouchableOpacity
+                onPress={closeFiltersModal}
+          >
+            <Ionicons name="close" size={28} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView
+          style={styles.modalContentSimple}
+          showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="always"
+          scrollEnabled={true}
+          nestedScrollEnabled={true}
+        >
+          {/* Seção de Busca por Nome */}
+          <View style={styles.filterSection}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="search-outline" size={18} color={colors.primary} />
+              <Text style={styles.sectionTitle}>Buscar por Nome</Text>
+            </View>
+            <ModernInput
+              value={filterSearchTerm}
+              onChangeText={setFilterSearchTerm}
+              placeholder="Digite o nome da clínica..."
+              icon="medical-outline"
+              style={styles.filterInput}
+            />
+          </View>
+
+          {/* Seção de Especialidades */}
+          <View style={styles.filterSection}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="medical-outline" size={18} color={colors.primary} />
+              <Text style={styles.sectionTitle}>Especialidades</Text>
+              {selectedSpecializations.length > 0 && (
+                <Text style={styles.selectedCount}>
+                  {selectedSpecializations.length} selecionada(s)
+                </Text>
+              )}
+            </View>
+
+            <ModernInput
+              value={specializationSearchTerm}
+              onChangeText={setSpecializationSearchTerm}
+              placeholder="Pesquisar especialidade..."
+              icon="search-outline"
+              style={styles.filterInput}
+            />
+
+            <View style={styles.specializationGrid}>
+              {filteredSpecializations.length > 0 ? (
+                filteredSpecializations.map((spec) => (
+                  <TouchableOpacity
+                    key={spec.codigo}
+                    style={[
+                      styles.specializationChip,
+                      selectedSpecializations.includes(spec.nome) &&
+                        styles.specializationChipActive,
+                    ]}
+                    onPress={() => toggleSpecialization(spec.nome)}
+                  >
+                    <Ionicons
+                      name={
+                        selectedSpecializations.includes(spec.nome)
+                          ? "checkbox"
+                          : "square-outline"
+                      }
+                      size={18}
+                      color={
+                        selectedSpecializations.includes(spec.nome)
+                          ? colors.primary
+                          : colors.textSecondary
+                      }
+                      style={styles.chipCheckbox}
+                    />
+                    <Text
+                      style={[
+                        styles.specializationChipText,
+                        selectedSpecializations.includes(spec.nome) &&
+                          styles.specializationChipTextActive,
+                      ]}
+                    >
+                      {spec.nome}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={styles.emptySpecializations}>
+                  <Ionicons name="search-outline" size={32} color={colors.textMuted} />
+                  <Text style={styles.emptySpecializationsText}>
+                    Nenhuma especialidade encontrada
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.modalContentPadding} />
+        </ScrollView>
+
+        {/* Footer com Botões - Fixo */}
+        <View style={styles.modalFooterSimple}>
+          <TouchableOpacity
+            style={styles.buttonClear}
+            onPress={clearAllFilters}
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.primary} />
+            <Text style={styles.buttonClearText}>Limpar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.buttonApply}
+                onPress={closeFiltersModal}
+          >
+            <Ionicons name="checkmark" size={18} color={colors.onPrimary} />
+            <Text style={styles.buttonApplyText}>Aplicar</Text>
+          </TouchableOpacity>
+        </View>
+          </KeyboardAvoidingView>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <View style={styles.emptyStateIcon}>
@@ -106,7 +357,7 @@ export default function ClinicList({ navigation, route }: Props) {
       </View>
       <Text style={styles.emptyStateTitle}>Nenhuma clínica encontrada</Text>
       <Text style={styles.emptyStateText}>
-        {searchTerm || activeFilter 
+        {searchTerm || selectedSpecializations.length > 0 || filterSearchTerm
           ? "Tente ajustar sua busca ou filtros para encontrar mais resultados"
           : "Não há clínicas disponíveis no momento"
         }
@@ -118,66 +369,53 @@ export default function ClinicList({ navigation, route }: Props) {
     </View>
   );
 
-  const SpecializationFilters = () => (
+  const renderSpecializationFilters = () => (
     <View style={styles.filtersSection}>
       <View style={styles.filterHeader}>
         <Ionicons name="options-outline" size={18} color={colors.primary} />
-        <Text style={styles.filterHeaderText}>Especialidades</Text>
-        {activeFilter && (
+        <Text style={styles.filterHeaderText}>Filtros</Text>
+        {(selectedSpecializations.length > 0 || filterSearchTerm) && (
           <TouchableOpacity
             style={styles.clearFilterButton}
-            onPress={() => setActiveFilter(null)}
+            onPress={clearAllFilters}
           >
-            <Text style={styles.clearFilterText}>Limpar</Text>
+            <Text style={styles.clearFilterText}>Limpar tudo</Text>
           </TouchableOpacity>
         )}
       </View>
-      
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filtersContainer}
+
+      <TouchableOpacity
+        style={styles.filterButtonContainer}
+        onPress={openFiltersModal}
       >
-        <TouchableOpacity
-          style={[styles.filterChip, !activeFilter && styles.filterChipActive]}
-          onPress={() => setActiveFilter(null)}
-        >
-          <Ionicons 
-            name="apps-outline" 
-            size={16} 
-            color={!activeFilter ? colors.onPrimary : colors.primary} 
-            style={styles.filterIcon}
-          />
-          <Text style={[styles.filterText, !activeFilter && styles.filterTextActive]}>
-            Todas
+        <View style={styles.filterButton}>
+          <Ionicons name="funnel-outline" size={18} color={colors.onPrimary} />
+          <Text style={styles.filterButtonText}>
+            {selectedSpecializations.length > 0 || filterSearchTerm
+              ? `${selectedSpecializations.length} filtro(s) ativo(s)`
+              : "Filtros"}
           </Text>
-        </TouchableOpacity>
-        {specializations.map((spec) => (
-          <TouchableOpacity
-            key={spec.codigo}
-            style={[
-              styles.filterChip,
-              activeFilter === spec.nome && styles.filterChipActive,
-            ]}
-            onPress={() => setActiveFilter(spec.nome)}
-          >
-            <Ionicons 
-              name="medical-outline" 
-              size={16} 
-              color={activeFilter === spec.nome ? colors.onPrimary : colors.primary} 
-              style={styles.filterIcon}
-            />
-            <Text
-              style={[
-                styles.filterText,
-                activeFilter === spec.nome && styles.filterTextActive,
-              ]}
-            >
-              {spec.nome}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+          <Ionicons
+            name="chevron-forward-outline"
+            size={18}
+            color={colors.onPrimary}
+            style={styles.filterButtonIcon}
+          />
+        </View>
+      </TouchableOpacity>
+
+      {selectedSpecializations.length > 0 && (
+        <View style={styles.activeTags}>
+          {selectedSpecializations.map((spec) => (
+            <View key={spec} style={styles.tag}>
+              <Text style={styles.tagText}>{spec}</Text>
+              <TouchableOpacity onPress={() => toggleSpecialization(spec)}>
+                <Ionicons name="close" size={14} color={colors.onPrimary} />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 
@@ -212,7 +450,8 @@ export default function ClinicList({ navigation, route }: Props) {
         </View>
       </LinearGradient>
 
-      <SpecializationFilters />
+      {renderSpecializationFilters()}
+      {renderFiltersModal()}
 
       {loading && !clinics.length ? (
         <View style={styles.loadingContainer}>
@@ -295,7 +534,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   filterHeaderText: {
     fontSize: fontSize.md,
@@ -315,36 +554,249 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: fontWeight.medium,
   },
-  filtersContainer: {
+  filterButtonContainer: {
     paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
-  filterChip: {
+  filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    ...shadows.medium,
+  },
+  filterButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.onPrimary,
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  filterButtonIcon: {
+    marginLeft: spacing.md,
+  },
+  activeTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.round,
+    gap: spacing.xs,
+  },
+  tagText: {
+    color: colors.onPrimary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  
+  // Modal Styles
+  modalFullContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  modalHeaderSimple: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    paddingTop: Platform.OS === 'ios' ? spacing.xl : spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+    backgroundColor: colors.surface,
+  },
+  dragIndicatorContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  dragIndicator: {
+    width: 40,
+    height: 4,
+    backgroundColor: colors.textMuted,
+    borderRadius: 2,
+  },
+  modalContentSimple: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+  },
+  modalContentPadding: {
+    height: spacing.xl,
+  },
+  modalFooterSimple: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? spacing.lg : spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+    backgroundColor: colors.surface,
+    gap: spacing.md,
+  },
+  
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalOverlayButton: {
+    flex: 1,
+  },
+  modalContainer: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    width: '100%',
+    height: height * 0.9,
+    ...shadows.large,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+  modalTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+  },
+  filterSection: {
+    marginBottom: spacing.xl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    gap: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    flex: 1,
+  },
+  selectedCount: {
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    fontWeight: fontWeight.semibold,
     backgroundColor: colors.surfaceVariant,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.round,
-    marginRight: spacing.sm,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    ...shadows.small,
   },
-  filterChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  filterInput: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    marginBottom: spacing.md,
   },
-  filterIcon: {
-    marginRight: spacing.xs,
+  specializationGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
   },
-  filterText: {
-    color: colors.primary,
+  emptySpecializations: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.surfaceVariant,
+  },
+  emptySpecializationsText: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
     fontWeight: fontWeight.medium,
-    fontSize: fontSize.sm,
   },
-  filterTextActive: {
+  specializationChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    flex: 1,
+    minWidth: '45%',
+  },
+  specializationChipActive: {
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
+  },
+  chipCheckbox: {
+    marginRight: spacing.md,
+  },
+  specializationChipText: {
+    fontSize: fontSize.md,
+    color: colors.text,
+    fontWeight: fontWeight.medium,
+    flex: 1,
+  },
+  specializationChipTextActive: {
+    color: colors.primary,
+    fontWeight: fontWeight.bold,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? spacing.lg : spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+    backgroundColor: colors.surface,
+    gap: spacing.md,
+  },
+  buttonClear: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  buttonClearText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.primary,
+    marginLeft: spacing.sm,
+  },
+  buttonApply: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+  },
+  buttonApplyText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
     color: colors.onPrimary,
+    marginLeft: spacing.sm,
   },
+  
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
