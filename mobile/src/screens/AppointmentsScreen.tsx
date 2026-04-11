@@ -73,10 +73,10 @@ export default function AppointmentsScreen({ route, navigation }: Props) {
 
   const getStatusDetails = (status: string) => {
     switch (status) {
-      case "agendada": return { color: colors.warning, icon: "time-outline", label: "Agendada" };
+      case "agendada": return { color: colors.textSecondary, icon: "time-outline", label: "Aguardando confirmação" };
       case "confirmada": return { color: colors.success, icon: "checkmark-circle-outline", label: "Confirmada" };
       case "cancelada": return { color: colors.error, icon: "close-circle-outline", label: "Cancelada" };
-      case "concluida": return { color: colors.textSecondary, icon: "checkmark-done-outline", label: "Concluída" };
+      case "concluida": return { color: colors.success, icon: "checkmark-done-outline", label: "Concluída" };
       default: return { color: colors.textSecondary, icon: "help-outline", label: status };
     }
   };
@@ -94,14 +94,14 @@ export default function AppointmentsScreen({ route, navigation }: Props) {
       apt.status !== "cancelada" &&
       apt.status !== "concluida" &&
       new Date(apt.data_hora) >= new Date()
-  );
+  ).sort((a, b) => new Date(a.data_hora).getTime() - new Date(b.data_hora).getTime());
 
   const pastAppointments = appointments.filter(
     (apt) =>
       apt.status === "concluida" ||
       apt.status === "cancelada" ||
       new Date(apt.data_hora) < new Date()
-  );
+  ).sort((a, b) => new Date(b.data_hora).getTime() - new Date(a.data_hora).getTime());
 
   const renderAppointment = ({ item }: { item: AppointmentWithDetails }) => {
     const { date, time } = formatDateTime(item.data_hora);
@@ -116,7 +116,9 @@ export default function AppointmentsScreen({ route, navigation }: Props) {
           </View>
           <View style={[styles.statusBadge, { backgroundColor: status.color + "20" }]}>
             <Ionicons name={status.icon as any} size={16} color={status.color} />
-            <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
+            <Text style={[styles.statusText, { color: status.color }]} numberOfLines={2}>
+              {status.label}
+            </Text>
           </View>
         </View>
 
@@ -286,6 +288,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
+    flexShrink: 1,
+    paddingRight: spacing.sm,
   },
   dateText: {
     fontSize: fontSize.md,
@@ -294,16 +298,21 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: borderRadius.round,
+    maxWidth: "38%",
+    flexShrink: 1,
+    marginLeft: spacing.sm,
   },
   statusText: {
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
-    textTransform: "uppercase",
+    textTransform: "none",
+    flexShrink: 1,
+    lineHeight: 14,
   },
   appointmentBody: {
     paddingVertical: spacing.sm,

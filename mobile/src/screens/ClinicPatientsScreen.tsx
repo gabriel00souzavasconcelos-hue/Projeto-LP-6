@@ -100,6 +100,11 @@ export default function ClinicPatientsScreen({ route, navigation }: Props) {
     };
   };
 
+  const getHistoryPriority = (status: string) => {
+    const isFinished = status === 'concluida' || status === 'cancelada';
+    return isFinished ? 1 : 0;
+  };
+
   const filteredAppointments = appointments.filter(apt => {
     const now = new Date();
     const aptDate = new Date(apt.data_hora);
@@ -110,6 +115,21 @@ export default function ClinicPatientsScreen({ route, navigation }: Props) {
       return apt.status === 'concluida' || apt.status === 'cancelada' || aptDate < now;
     }
     return true;
+  }).sort((a, b) => {
+    if (filter === 'past') {
+      const priorityDiff = getHistoryPriority(a.status) - getHistoryPriority(b.status);
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
+    }
+
+    const diff = new Date(b.data_hora).getTime() - new Date(a.data_hora).getTime();
+
+    if (filter === 'upcoming') {
+      return -diff;
+    }
+
+    return diff;
   });
 
   // Agrupar por paciente
@@ -162,7 +182,25 @@ export default function ClinicPatientsScreen({ route, navigation }: Props) {
             <Text style={styles.emptySubtext}>As consultas agendadas aparecerão aqui</Text>
           </ModernCard>
         ) : (
-          Object.entries(patientGroups).map(([patientName, appointments]) => (
+          Object.entries(patientGroups).map(([patientName, patientAppointments]) => {
+            const sortedPatientAppointments = [...patientAppointments].sort((a, b) => {
+              if (filter === 'past') {
+                const priorityDiff = getHistoryPriority(a.status) - getHistoryPriority(b.status);
+                if (priorityDiff !== 0) {
+                  return priorityDiff;
+                }
+              }
+
+              const diff = new Date(b.data_hora).getTime() - new Date(a.data_hora).getTime();
+
+              if (filter === 'upcoming') {
+                return -diff;
+              }
+
+              return diff;
+            });
+
+            return (
             <ModernCard key={patientName} variant="elevated" style={styles.patientCard}>
               <View style={styles.patientHeader}>
                 <View style={styles.patientInfo}>
@@ -170,13 +208,13 @@ export default function ClinicPatientsScreen({ route, navigation }: Props) {
                   <View style={styles.patientDetails}>
                     <Text style={styles.patientName}>{patientName}</Text>
                     <Text style={styles.appointmentCount}>
-                      {appointments.length} consulta{appointments.length > 1 ? 's' : ''}
+                      {sortedPatientAppointments.length} consulta{sortedPatientAppointments.length > 1 ? 's' : ''}
                     </Text>
                   </View>
                 </View>
               </View>
 
-              {appointments.map((apt) => {
+              {sortedPatientAppointments.map((apt) => {
                 const { date, time } = formatDateTime(apt.data_hora);
                 return (
                   <View key={apt.codigo} style={styles.appointmentItem}>
@@ -239,7 +277,8 @@ export default function ClinicPatientsScreen({ route, navigation }: Props) {
                 );
               })}
             </ModernCard>
-          ))
+            );
+          })
         )}
       </ScrollView>
     </View>
