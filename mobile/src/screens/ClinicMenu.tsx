@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, StatusBar, Platform, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import ModernButton from '../components/ModernButton';
 import ModernCard from '../components/ModernCard';
 import { PremiumActionCard, SubscriptionBanner } from '../components/PremiumGate';
 import { useClinic } from '../contexts/ClinicContexts';
-import { authLogout } from '../api/client';
+import { authLogout, getClinicById } from '../api/client';
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../styles/theme';
 
 type Props = {
@@ -15,8 +16,31 @@ type Props = {
 };
 
 export default function ClinicMenu({ route, navigation }: Props) {
-  const clinic = route.params?.clinic;
+  const routeClinic = route.params?.clinic;
+  const [clinic, setClinic] = useState(routeClinic ?? null);
   const { subscription, refreshSubscription, clearSession } = useClinic();
+
+  useEffect(() => {
+    if (routeClinic) {
+      setClinic(routeClinic);
+    }
+  }, [routeClinic]);
+
+  const refreshClinicData = useCallback(async () => {
+    if (!routeClinic?.codigo) return;
+    try {
+      const updatedClinic = await getClinicById(routeClinic.codigo);
+      setClinic(updatedClinic);
+    } catch (error) {
+      console.warn('Não foi possível recarregar dados atualizados da clínica.', error);
+    }
+  }, [routeClinic?.codigo]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshClinicData();
+    }, [refreshClinicData])
+  );
 
   const handleUpgradePress = () => {
     Alert.alert(

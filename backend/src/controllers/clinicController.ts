@@ -4,8 +4,23 @@ import { clinicService, ClinicData, UpdateClinicData } from '../services/clinicS
 export class ClinicController {
   async getAllClinics(req: Request, res: Response) {
     try {
-      const { specialization } = req.query;
-      const filters = specialization ? { specialization: specialization as string } : undefined;
+      const { specialization, atende_unimed } = req.query;
+      let atendeUnimedFilter: boolean | undefined;
+
+      if (typeof atende_unimed === 'string') {
+        if (atende_unimed === 'true') atendeUnimedFilter = true;
+        else if (atende_unimed === 'false') atendeUnimedFilter = false;
+        else {
+          res.status(400).json({ error: 'Parâmetro atende_unimed deve ser true ou false' });
+          return;
+        }
+      }
+
+      const filters = {
+        ...(specialization ? { specialization: specialization as string } : {}),
+        ...(atendeUnimedFilter !== undefined ? { atende_unimed: atendeUnimedFilter } : {}),
+      };
+
       const clinics = await clinicService.getAllClinics(filters);
       res.json(clinics);
     } catch (error: any) {

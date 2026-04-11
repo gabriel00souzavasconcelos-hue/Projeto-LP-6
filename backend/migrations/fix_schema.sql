@@ -16,6 +16,10 @@ ALTER TABLE clinicas
 ALTER TABLE clinicas 
   ALTER COLUMN senha DROP NOT NULL;
 
+-- 4. Garantir campo de atendimento Unimed na tabela clinicas
+ALTER TABLE clinicas
+  ADD COLUMN IF NOT EXISTS atende_unimed BOOLEAN NOT NULL DEFAULT FALSE;
+
 -- Opcional: Adicionar valores padrão vazios para campos existentes que são NULL
 UPDATE pacientes SET datan = NULL WHERE datan = '';
 UPDATE pacientes SET fone = NULL WHERE fone = '';

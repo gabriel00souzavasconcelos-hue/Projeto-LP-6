@@ -1,5 +1,32 @@
 import { supabase } from '../supabaseClient';
 
+function isMissingAtendeUnimedColumnError(message?: string): boolean {
+  const text = (message || '').toLowerCase();
+  return text.includes('atende_unimed') && (text.includes('column') || text.includes('schema cache'));
+}
+
+function isMissingUnimedColumnError(message?: string): boolean {
+  const text = (message || '').toLowerCase();
+  return text.includes('unimed') && (text.includes('column') || text.includes('schema cache'));
+}
+
+function normalizeClinic(row: any) {
+  if (!row) return row;
+  const atendeUnimed =
+    typeof row.atende_unimed === 'boolean'
+      ? row.atende_unimed
+      : typeof row.unimed === 'boolean'
+        ? row.unimed
+        : typeof row.trabalha_com_horario === 'boolean'
+          ? row.trabalha_com_horario
+        : false;
+
+  return {
+    ...row,
+    atende_unimed: atendeUnimed,
+  };
+}
+
 export interface ClinicData {
   nome: string;
   endereco?: string;
@@ -7,6 +34,7 @@ export interface ClinicData {
   email: string;
   senha?: string;
   imagem?: string;
+  atende_unimed?: boolean;
 }
 
 export interface UpdateClinicData {
@@ -16,22 +44,18 @@ export interface UpdateClinicData {
   email?: string;
   senha?: string;
   imagem?: string;
+  atende_unimed?: boolean;
 }
 
 export class ClinicService {
-  async getAllClinics(filters?: { specialization?: string }) {
+  async getAllClinics(filters?: { specialization?: string; atende_unimed?: boolean }) {
     try {
       if (filters?.specialization) {
         // Query clinics with specific specialization
-        const { data, error } = await supabase
+        let query = supabase
           .from('clinicas')
           .select(`
-            codigo,
-            nome,
-            endereco,
-            fone,
-            email,
-            imagem,
+            *,
             clinicas_especializacoes!inner(
               especializacao:especializacoes!inner(
                 nome
@@ -40,28 +64,67 @@ export class ClinicService {
           `)
           .eq('clinicas_especializacoes.especializacao.nome', filters.specialization);
 
+        if (filters.atende_unimed !== undefined) {
+          query = query.eq('atende_unimed', filters.atende_unimed);
+        }
+
+        let { data, error } = await query;
+
+        if (error && filters.atende_unimed !== undefined && isMissingAtendeUnimedColumnError(error.message)) {
+          const fallbackQuery = supabase
+            .from('clinicas')
+            .select(`
+              *,
+              clinicas_especializacoes!inner(
+                especializacao:especializacoes!inner(
+                  nome
+                )
+              )
+            `)
+            .eq('clinicas_especializacoes.especializacao.nome', filters.specialization)
+            .eq('unimed', filters.atende_unimed);
+
+          const fallbackResult = await fallbackQuery;
+          data = fallbackResult.data;
+          error = fallbackResult.error;
+
+          if (error && isMissingUnimedColumnError(error.message)) {
+            const secondFallbackQuery = supabase
+              .from('clinicas')
+              .select(`
+                *,
+                clinicas_especializacoes!inner(
+                  especializacao:especializacoes!inner(
+                    nome
+                  )
+                )
+              `)
+              .eq('clinicas_especializacoes.especializacao.nome', filters.specialization)
+              .eq('trabalha_com_horario', filters.atende_unimed);
+
+            const secondFallbackResult = await secondFallbackQuery;
+            data = secondFallbackResult.data;
+            error = secondFallbackResult.error;
+          }
+        }
+
         if (error) {
           throw new Error(error.message);
         }
 
         // Transform data to include specializations array
         const transformedData = data?.map(clinic => ({
-          ...clinic,
+          ...normalizeClinic(clinic),
           especializacoes: clinic.clinicas_especializacoes?.map((ce: any) => ce.especializacao?.nome).filter(Boolean) || []
         }));
 
         return transformedData || [];
       } else {
         // Query all clinics with their specializations
-        const { data, error } = await supabase
+        let query = supabase
           .from('clinicas')
           .select(`
-            codigo,
-            nome,
-            endereco,
-            fone,
-            email,
-            imagem,
+            *,
             clinicas_especializacoes(
               especializacao:especializacoes(
                 nome
@@ -69,13 +132,55 @@ export class ClinicService {
             )
           `);
 
+        if (filters?.atende_unimed !== undefined) {
+          query = query.eq('atende_unimed', filters.atende_unimed);
+        }
+
+        let { data, error } = await query;
+
+        if (error && filters?.atende_unimed !== undefined && isMissingAtendeUnimedColumnError(error.message)) {
+          const fallbackQuery = supabase
+            .from('clinicas')
+            .select(`
+              *,
+              clinicas_especializacoes(
+                especializacao:especializacoes(
+                  nome
+                )
+              )
+            `)
+            .eq('unimed', filters.atende_unimed);
+
+          const fallbackResult = await fallbackQuery;
+          data = fallbackResult.data;
+          error = fallbackResult.error;
+
+          if (error && isMissingUnimedColumnError(error.message)) {
+            const secondFallbackQuery = supabase
+              .from('clinicas')
+              .select(`
+                *,
+                clinicas_especializacoes(
+                  especializacao:especializacoes(
+                    nome
+                  )
+                )
+              `)
+              .eq('trabalha_com_horario', filters.atende_unimed);
+
+            const secondFallbackResult = await secondFallbackQuery;
+            data = secondFallbackResult.data;
+            error = secondFallbackResult.error;
+          }
+        }
+
         if (error) {
           throw new Error(error.message);
         }
 
         // Transform data to include specializations array
         const transformedData = data?.map(clinic => ({
-          ...clinic,
+          ...normalizeClinic(clinic),
           especializacoes: clinic.clinicas_especializacoes?.map((ce: any) => ce.especializacao?.nome).filter(Boolean) || []
         }));
 
@@ -96,12 +201,7 @@ export class ClinicService {
       const { data, error } = await supabase
         .from('clinicas')
         .select(`
-          codigo,
-          nome,
-          endereco,
-          fone,
-          email,
-          imagem,
+          *,
           clinicas_especializacoes(
             especializacao:especializacoes(
               nome
@@ -121,7 +221,7 @@ export class ClinicService {
 
       // Transform data to include specializations array
       const transformedData = {
-        ...data,
+        ...normalizeClinic(data),
         especializacoes: data.clinicas_especializacoes?.map((ce: any) => ce.especializacao?.nome).filter(Boolean) || []
       };
 
@@ -133,25 +233,66 @@ export class ClinicService {
   }
 
   async createClinic(clinicData: ClinicData) {
-    const { nome, endereco, fone, email, senha, imagem } = clinicData;
+    const { nome, endereco, fone, email, senha, imagem, atende_unimed } = clinicData;
 
     if (!nome || !email || !senha) {
       throw new Error('Dados incompletos: nome, email e senha são obrigatórios');
     }
 
-    const payload = { nome, endereco, fone, email, senha, imagem };
+    const payload = {
+      nome,
+      endereco,
+      fone,
+      email,
+      senha,
+      imagem,
+      atende_unimed: atende_unimed ?? false,
+    };
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('clinicas')
       .insert(payload)
       .select()
       .single();
 
+    if (error && isMissingAtendeUnimedColumnError(error.message)) {
+      const { atende_unimed, ...legacyPayload } = payload;
+      const fallbackPayload = {
+        ...legacyPayload,
+        unimed: atende_unimed,
+      };
+
+      const fallbackResult = await supabase
+        .from('clinicas')
+        .insert(fallbackPayload)
+        .select()
+        .single();
+
+      data = fallbackResult.data;
+      error = fallbackResult.error;
+
+      if (error && isMissingUnimedColumnError(error.message)) {
+        const secondFallbackPayload = {
+          ...legacyPayload,
+          trabalha_com_horario: atende_unimed,
+        };
+
+        const secondFallbackResult = await supabase
+          .from('clinicas')
+          .insert(secondFallbackPayload)
+          .select()
+          .single();
+
+        data = secondFallbackResult.data;
+        error = secondFallbackResult.error;
+      }
+    }
+
     if (error) {
       throw new Error(error.message);
     }
 
-    return data;
+    return normalizeClinic(data);
   }
 
   async updateClinic(codigo: number, updateData: UpdateClinicData) {
@@ -159,7 +300,7 @@ export class ClinicService {
       throw new Error('Código inválido');
     }
 
-    const { nome, endereco, fone, email, senha, imagem } = updateData;
+    const { nome, endereco, fone, email, senha, imagem, atende_unimed } = updateData;
     const update: any = {};
 
     if (nome !== undefined) update.nome = nome;
@@ -168,19 +309,55 @@ export class ClinicService {
     if (email !== undefined) update.email = email;
     if (senha !== undefined) update.senha = senha;
     if (imagem !== undefined) update.imagem = imagem;
+    if (atende_unimed !== undefined) update.atende_unimed = atende_unimed;
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('clinicas')
       .update(update)
       .eq('codigo', codigo)
       .select()
       .single();
 
+    if (error && update.atende_unimed !== undefined && isMissingAtendeUnimedColumnError(error.message)) {
+      const { atende_unimed: atendeUnimed, ...legacyUpdate } = update;
+      const fallbackUpdate = {
+        ...legacyUpdate,
+        unimed: atendeUnimed,
+      };
+
+      const fallbackResult = await supabase
+        .from('clinicas')
+        .update(fallbackUpdate)
+        .eq('codigo', codigo)
+        .select()
+        .single();
+
+      data = fallbackResult.data;
+      error = fallbackResult.error;
+
+      if (error && isMissingUnimedColumnError(error.message)) {
+        const secondFallbackUpdate = {
+          ...legacyUpdate,
+          trabalha_com_horario: atendeUnimed,
+        };
+
+        const secondFallbackResult = await supabase
+          .from('clinicas')
+          .update(secondFallbackUpdate)
+          .eq('codigo', codigo)
+          .select()
+          .single();
+
+        data = secondFallbackResult.data;
+        error = secondFallbackResult.error;
+      }
+    }
+
     if (error) {
       throw new Error(error.message);
     }
 
-    return data;
+    return normalizeClinic(data);
   }
 
   async deleteClinic(codigo: number) {

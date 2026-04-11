@@ -16,6 +16,7 @@ export interface Clinic {
   email: string;
   senha?: string;
   imagem?: string | null;
+  atende_unimed?: boolean;
 }
 
 export interface Specialization {

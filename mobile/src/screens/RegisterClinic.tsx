@@ -35,6 +35,7 @@ export default function RegisterClinic({ navigation }: Props) {
   const [fone, setFone] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [atendeUnimed, setAtendeUnimed] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const { image, showImageOptions, setUploading } = useImagePicker();
@@ -59,7 +60,15 @@ export default function RegisterClinic({ navigation }: Props) {
         }
       }
 
-      const payload = { nome, endereco, fone, email, senha, imagem: imageUrl || null };
+      const payload = {
+        nome,
+        endereco,
+        fone,
+        email,
+        senha,
+        imagem: imageUrl || null,
+        atende_unimed: atendeUnimed,
+      };
       await authRegister("clinica", payload);
       Alert.alert("Sucesso!", "Clínica cadastrada com sucesso.", [
         { text: "Ir para Login", onPress: () => navigation.goBack() },
@@ -140,6 +149,26 @@ export default function RegisterClinic({ navigation }: Props) {
               autoCapitalize="none"
               icon="mail-outline"
             />
+
+            <TouchableOpacity
+              style={styles.toggleCard}
+              onPress={() => setAtendeUnimed((prev) => !prev)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.toggleLeft}>
+                <Ionicons
+                  name={atendeUnimed ? "checkbox" : "square-outline"}
+                  size={22}
+                  color={atendeUnimed ? colors.success : colors.textSecondary}
+                />
+                <View style={styles.toggleTextContainer}>
+                  <Text style={styles.toggleTitle}>Atende Unimed</Text>
+                  <Text style={styles.toggleSubtitle}>
+                    Marque se a clínica aceita convênio Unimed
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
 
             <ModernInput
               label="Senha *"
@@ -227,6 +256,33 @@ const styles = StyleSheet.create({
   },
   registerButton: {
     marginTop: spacing.md,
+  },
+  toggleCard: {
+    backgroundColor: colors.surfaceVariant,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  toggleLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  toggleTextContainer: {
+    marginLeft: spacing.md,
+    flex: 1,
+  },
+  toggleTitle: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+  },
+  toggleSubtitle: {
+    marginTop: spacing.xs,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
   },
   footer: {
     flexDirection: "row",

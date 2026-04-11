@@ -49,6 +49,7 @@ export default function ClinicList({ navigation, route }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSearchTerm, setFilterSearchTerm] = useState("");
   const [selectedSpecializations, setSelectedSpecializations] = useState<string[]>([]);
+  const [filterByUnimed, setFilterByUnimed] = useState(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [specializationSearchTerm, setSpecializationSearchTerm] = useState("");
 
@@ -99,6 +100,11 @@ export default function ClinicList({ navigation, route }: Props) {
       );
     }
 
+    // Filtro por atendimento Unimed
+    if (filterByUnimed) {
+      filtered = filtered.filter((clinic) => clinic.atende_unimed === true);
+    }
+
     // Filtro por nome de clínica (no modal e na busca)
     if (filterSearchTerm) {
       const lowercasedTerm = filterSearchTerm.toLowerCase();
@@ -118,7 +124,7 @@ export default function ClinicList({ navigation, route }: Props) {
     }
 
     return filtered;
-  }, [clinics, searchTerm, selectedSpecializations, filterSearchTerm]);
+  }, [clinics, searchTerm, selectedSpecializations, filterSearchTerm, filterByUnimed]);
 
   const toggleSpecialization = (specName: string) => {
     setSelectedSpecializations((prev) =>
@@ -132,6 +138,7 @@ export default function ClinicList({ navigation, route }: Props) {
     setSelectedSpecializations([]);
     setFilterSearchTerm("");
     setSpecializationSearchTerm("");
+    setFilterByUnimed(false);
     setIsFilterModalVisible(false);
   };
 
@@ -185,6 +192,11 @@ export default function ClinicList({ navigation, route }: Props) {
     clearAllFilters();
     fetchClinics();
   };
+
+  const activeFiltersCount =
+    selectedSpecializations.length +
+    (filterSearchTerm ? 1 : 0) +
+    (filterByUnimed ? 1 : 0);
 
   const renderClinicItem = ({ item }: { item: Clinic }) => (
     <ClinicCard
@@ -254,6 +266,33 @@ export default function ClinicList({ navigation, route }: Props) {
               icon="medical-outline"
               style={styles.filterInput}
             />
+          </View>
+
+          <View style={styles.filterSection}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="shield-checkmark-outline" size={18} color={colors.primary} />
+              <Text style={styles.sectionTitle}>Convênio</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.unimedFilterCard}
+              onPress={() => setFilterByUnimed((prev) => !prev)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.unimedFilterLeft}>
+                <Ionicons
+                  name={filterByUnimed ? "checkbox" : "square-outline"}
+                  size={20}
+                  color={filterByUnimed ? colors.success : colors.textSecondary}
+                />
+                <View style={styles.unimedFilterTextContainer}>
+                  <Text style={styles.unimedFilterTitle}>Mostrar apenas clínicas que atendem Unimed</Text>
+                  <Text style={styles.unimedFilterSubtitle}>
+                    Exibe somente clínicas com atendimento Unimed ativo
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Seção de Especialidades */}
@@ -357,7 +396,7 @@ export default function ClinicList({ navigation, route }: Props) {
       </View>
       <Text style={styles.emptyStateTitle}>Nenhuma clínica encontrada</Text>
       <Text style={styles.emptyStateText}>
-        {searchTerm || selectedSpecializations.length > 0 || filterSearchTerm
+        {searchTerm || selectedSpecializations.length > 0 || filterSearchTerm || filterByUnimed
           ? "Tente ajustar sua busca ou filtros para encontrar mais resultados"
           : "Não há clínicas disponíveis no momento"
         }
@@ -374,7 +413,7 @@ export default function ClinicList({ navigation, route }: Props) {
       <View style={styles.filterHeader}>
         <Ionicons name="options-outline" size={18} color={colors.primary} />
         <Text style={styles.filterHeaderText}>Filtros</Text>
-        {(selectedSpecializations.length > 0 || filterSearchTerm) && (
+        {(activeFiltersCount > 0) && (
           <TouchableOpacity
             style={styles.clearFilterButton}
             onPress={clearAllFilters}
@@ -391,8 +430,8 @@ export default function ClinicList({ navigation, route }: Props) {
         <View style={styles.filterButton}>
           <Ionicons name="funnel-outline" size={18} color={colors.onPrimary} />
           <Text style={styles.filterButtonText}>
-            {selectedSpecializations.length > 0 || filterSearchTerm
-              ? `${selectedSpecializations.length} filtro(s) ativo(s)`
+            {activeFiltersCount > 0
+              ? `${activeFiltersCount} filtro(s) ativo(s)`
               : "Filtros"}
           </Text>
           <Ionicons
@@ -414,6 +453,17 @@ export default function ClinicList({ navigation, route }: Props) {
               </TouchableOpacity>
             </View>
           ))}
+        </View>
+      )}
+
+      {filterByUnimed && (
+        <View style={styles.activeTags}>
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>Atende Unimed</Text>
+            <TouchableOpacity onPress={() => setFilterByUnimed(false)}>
+              <Ionicons name="close" size={14} color={colors.onPrimary} />
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
@@ -705,6 +755,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.divider,
     marginBottom: spacing.md,
+  },
+  unimedFilterCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.divider,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  unimedFilterLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  unimedFilterTextContainer: {
+    marginLeft: spacing.md,
+    flex: 1,
+  },
+  unimedFilterTitle: {
+    fontSize: fontSize.md,
+    color: colors.text,
+    fontWeight: fontWeight.semibold,
+  },
+  unimedFilterSubtitle: {
+    marginTop: spacing.xs,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
   },
   specializationGrid: {
     flexDirection: 'row',

@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS clinicas (
   fone VARCHAR(20),
   email VARCHAR(120) NOT NULL UNIQUE,
   senha VARCHAR(200),
-  imagem TEXT
+  imagem TEXT,
+  atende_unimed BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS especializacoes (

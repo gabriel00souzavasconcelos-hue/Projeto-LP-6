@@ -1,5 +1,15 @@
 import { supabase } from '../supabaseClient';
 
+function isMissingAtendeUnimedColumnError(message?: string): boolean {
+  const text = (message || '').toLowerCase();
+  return text.includes('atende_unimed') && (text.includes('column') || text.includes('schema cache'));
+}
+
+function isMissingUnimedColumnError(message?: string): boolean {
+  const text = (message || '').toLowerCase();
+  return text.includes('unimed') && (text.includes('column') || text.includes('schema cache'));
+}
+
 export interface LoginData {
   email: string;
   senha: string;
@@ -96,11 +106,45 @@ export class AuthService {
 
     // 2. Insere na tabela de domínio (pacientes ou clinicas)
     const table = role === 'paciente' ? 'pacientes' : 'clinicas';
-    const { data: entity, error: entityError } = await supabase
+    let { data: entity, error: entityError } = await supabase
       .from(table)
       .insert({ nome, email, senha, ...rest })
       .select()
       .single();
+
+    if (entityError && role === 'clinica' && isMissingAtendeUnimedColumnError(entityError.message)) {
+      const payload = { nome, email, senha, ...rest } as any;
+      const { atende_unimed, ...legacyPayload } = payload;
+      const fallbackPayload = {
+        ...legacyPayload,
+        ...(atende_unimed !== undefined ? { unimed: atende_unimed } : {}),
+      };
+
+      const fallbackResult = await supabase
+        .from(table)
+        .insert(fallbackPayload)
+        .select()
+        .single();
+
+      entity = fallbackResult.data;
+      entityError = fallbackResult.error;
+
+      if (entityError && isMissingUnimedColumnError(entityError.message)) {
+        const secondFallbackPayload = {
+          ...legacyPayload,
+          ...(atende_unimed !== undefined ? { trabalha_com_horario: atende_unimed } : {}),
+        };
+
+        const secondFallbackResult = await supabase
+          .from(table)
+          .insert(secondFallbackPayload)
+          .select()
+          .single();
+
+        entity = secondFallbackResult.data;
+        entityError = secondFallbackResult.error;
+      }
+    }
 
     if (entityError) {
       // Rollback: remove o usuário do Auth se falhar na tabela

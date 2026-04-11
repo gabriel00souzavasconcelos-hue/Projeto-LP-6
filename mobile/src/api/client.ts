@@ -124,9 +124,10 @@ export async function createClinic(payload: Omit<Clinic, "codigo">) {
   return res.data;
 }
 
-export async function getClinics(specialization?: string) {
+export async function getClinics(specialization?: string, atendeUnimed?: boolean) {
   const params: any = {};
   if (specialization) params.specialization = specialization;
+  if (atendeUnimed !== undefined) params.atende_unimed = atendeUnimed;
   const res = await api.get("/clinics", { params });
   return res.data as Clinic[];
 }
